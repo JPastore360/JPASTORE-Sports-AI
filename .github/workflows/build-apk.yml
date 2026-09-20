@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip'
+      - 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip'
       - '.github/workflows/build-apk.yml'
 
 permissions:
@@ -23,6 +23,39 @@ jobs:
     steps:
       - name: Baixar repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Identificar ZIP do projeto
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ZIP_FILE=""
+
+          # Em um push, usa preferencialmente o ZIP alterado nesse commit.
+          if [ "${{ github.event_name }}" = "push" ]; then
+            ZIP_FILE="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA"               | grep -E '^JPASTORE_SPORTS_AI_ANDROID_PROJECT.*\.zip$'               | tail -n 1 || true)"
+          fi
+
+          # Em execução manual ou alteração apenas do workflow, procura um ZIP disponível.
+          if [ -z "$ZIP_FILE" ]; then
+            if [ -f "JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip" ]; then
+              ZIP_FILE="JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip"
+            else
+              ZIP_FILE="$(find . -maxdepth 1 -type f -name 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip'                 -printf '%f\n' | sort -V | tail -n 1 || true)"
+            fi
+          fi
+
+          if [ -z "$ZIP_FILE" ] || [ ! -f "$ZIP_FILE" ]; then
+            echo "ERRO: nenhum ZIP do J.Pastore Sports AI foi encontrado."
+            echo "Arquivos encontrados na raiz:"
+            find . -maxdepth 1 -type f -printf '%f\n' | sort
+            exit 1
+          fi
+
+          echo "ZIP selecionado: $ZIP_FILE"
+          echo "ZIP_FILE=$ZIP_FILE" >> "$GITHUB_ENV"
 
       - name: Preparar Java 17
         uses: actions/setup-java@v5
@@ -43,10 +76,7 @@ jobs:
 
           yes | "$SDKMANAGER" --licenses >/dev/null || true
 
-          "$SDKMANAGER" \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+          "$SDKMANAGER"             "platform-tools"             "platforms;android-35"             "build-tools;35.0.0"
 
       - name: Preparar Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -56,10 +86,16 @@ jobs:
       - name: Descompactar projeto
         shell: bash
         run: |
+          set -euo pipefail
           rm -rf build-src output
           mkdir -p build-src output
-          unzip -q JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip -d build-src
-          test -f build-src/JPASTORE_SPORTS_AI_ANDROID/settings.gradle
+          unzip -q "$ZIP_FILE" -d build-src
+
+          if [ ! -f build-src/JPASTORE_SPORTS_AI_ANDROID/settings.gradle ]; then
+            echo "ERRO: estrutura interna inesperada no ZIP: $ZIP_FILE"
+            find build-src -maxdepth 3 -type f | sort
+            exit 1
+          fi
 
       - name: Compilar APK
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -87,3 +123,4 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
+          
