@@ -155,17 +155,19 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 5.5 e correções de dados
+      - name: Confirmar versão 5.6 e Bilhete IA multiconfronto
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "47" || { echo "ERRO: projeto não é versionCode 47 (5.5)."; exit 1; }
-          grep -Fq "5.5.0-ptbr-history-fallback" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 5.5 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "48" || { echo "ERRO: projeto não é versionCode 48 (5.6)."; exit 1; }
+          grep -Fq "5.6.0-multiticket-ai" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 5.6 não encontrado."; exit 1; }
           grep -Fq "loadApiHistory" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: fallback histórico não encontrado."; exit 1; }
           grep -Fq "uiSnippet" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: camada PT-BR da web não encontrada."; exit 1; }
-          grep -Fq "FULL_ANALYSIS_BUILD_5_5" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 5.5 ausente."; exit 1; }
-          echo "Versão 5.5 validada: PT-BR + histórico estruturado + Bilhete IA."
+          grep -Fq "FULL_ANALYSIS_BUILD_5_6" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 5.6 ausente."; exit 1; }
+          grep -Fq "startSportMultiTicket" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: criador de bilhete multiconfronto ausente."; exit 1; }
+          grep -Fq "FINALIZAR BILHETE" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: finalização multiconfronto ausente."; exit 1; }
+          echo "Versão 5.6 validada: PT-BR + histórico estruturado + Bilhete IA multiconfronto."
 
       - name: Compilar APK
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
