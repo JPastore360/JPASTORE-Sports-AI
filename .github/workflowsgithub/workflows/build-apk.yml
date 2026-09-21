@@ -3,7 +3,7 @@ name: Gerar APK J.Pastore Sports AI
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, principal ]
     paths:
       - 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip'
       - '.github/workflows/build-apk.yml'
@@ -176,9 +176,33 @@ jobs:
           grep -Fq "5.9.0-ticket-hub-sofa-fallback" "$ROOT/app/build.gradle" || exit 1
           echo "Versão 5.9 validada: CRIAR BILHETE e BILHETE CRIADO sempre visíveis + fallback histórico público."
 
-      - name: Compilar APK
+      - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
-        run: gradle --no-daemon :app:assembleDebug
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Reduz concorrencia para evitar rajadas de downloads no Maven Central.
+          export GRADLE_OPTS="-Dorg.gradle.workers.max=2 -Dorg.gradle.parallel=false -Dorg.gradle.daemon=false"
+
+          MAX_ATTEMPTS=4
+          for ATTEMPT in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Tentativa $ATTEMPT de $MAX_ATTEMPTS para compilar o APK..."
+
+            if gradle --no-daemon --max-workers=2 :app:assembleDebug; then
+              echo "Compilacao concluida com sucesso."
+              exit 0
+            fi
+
+            if [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; then
+              WAIT=$((ATTEMPT * 45))
+              echo "Falha temporaria ao baixar dependencias. Aguardando ${WAIT}s antes de tentar novamente..."
+              sleep "$WAIT"
+            fi
+          done
+
+          echo "ERRO: a compilacao falhou apos $MAX_ATTEMPTS tentativas."
+          exit 1
 
       - name: Localizar e validar APK
         shell: bash
