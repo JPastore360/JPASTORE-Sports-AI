@@ -155,19 +155,26 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 5.6 e Bilhete IA multiconfronto
+      - name: Confirmar versão 5.9 e hub do Bilhete IA
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "48" || { echo "ERRO: projeto não é versionCode 48 (5.6)."; exit 1; }
-          grep -Fq "5.6.0-multiticket-ai" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 5.6 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "51" || { echo "ERRO: projeto não é versionCode 51 (5.9)."; exit 1; }
+          grep -Fq "5.9.0-ticket-hub-sofa-fallback" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 5.9 não encontrado."; exit 1; }
           grep -Fq "loadApiHistory" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: fallback histórico não encontrado."; exit 1; }
           grep -Fq "uiSnippet" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: camada PT-BR da web não encontrada."; exit 1; }
-          grep -Fq "FULL_ANALYSIS_BUILD_5_6" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 5.6 ausente."; exit 1; }
+          grep -Fq "FULL_ANALYSIS_BUILD_5_9" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 5.9 ausente."; exit 1; }
           grep -Fq "startSportMultiTicket" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: criador de bilhete multiconfronto ausente."; exit 1; }
-          grep -Fq "FINALIZAR BILHETE" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: finalização multiconfronto ausente."; exit 1; }
-          echo "Versão 5.6 validada: PT-BR + histórico estruturado + Bilhete IA multiconfronto."
+          grep -Fq "addSportMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/TicketStore.java" || { echo "ERRO: persistência multiconfronto corrigida ausente."; exit 1; }
+          grep -Fq "buildForMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/SportTicketEngine.java" || { echo "ERRO: fallback adaptativo do Bilhete IA ausente."; exit 1; }
+          grep -Fq "Bilhete não foi criado" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: proteção contra bilhete vazio ausente."; exit 1; }
+          grep -Fq "GERAR BILHETE •" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: geração multiconfronto ausente."; exit 1; }
+          grep -Fq "drawSportActiveTicketBar" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: barra de bilhete ativo ausente."; exit 1; }
+          grep -Fq "BILHETE CRIADO • 0" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: botão permanente BILHETE CRIADO ausente."; exit 1; }
+          grep -Fq "loadSofaHistory" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: fallback público estruturado ausente."; exit 1; }
+          grep -Fq "5.9.0-ticket-hub-sofa-fallback" "$ROOT/app/build.gradle" || exit 1
+          echo "Versão 5.9 validada: CRIAR BILHETE e BILHETE CRIADO sempre visíveis + fallback histórico público."
 
       - name: Compilar APK
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
