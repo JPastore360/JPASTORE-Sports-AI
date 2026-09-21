@@ -5,7 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip'
+      - 'JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip'
       - '.github/workflows/build-apk.yml'
 
 permissions:
@@ -19,64 +19,39 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      PROJECT_ZIP: JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip
+      EXPECTED_BUILD: JP-MULTISPORT-FULL-ANALYSIS-5.3.0
 
     steps:
       - name: Baixar repositorio
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Identificar ZIP do projeto
+      - name: Validar ZIP oficial
         shell: bash
         run: |
           set -euo pipefail
-
-          ZIP_FILE=""
-
-          # Em um push, usa preferencialmente o ZIP alterado nesse commit.
-          if [ "${{ github.event_name }}" = "push" ]; then
-            ZIP_FILE="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA"               | grep -E '^JPASTORE_SPORTS_AI_ANDROID_PROJECT.*\.zip$'               | tail -n 1 || true)"
-          fi
-
-          # Em execução manual ou alteração apenas do workflow, procura um ZIP disponível.
-          if [ -z "$ZIP_FILE" ]; then
-            if [ -f "JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip" ]; then
-              ZIP_FILE="JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip"
-            else
-              ZIP_FILE="$(find . -maxdepth 1 -type f -name 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip'                 -printf '%f\n' | sort -V | tail -n 1 || true)"
-            fi
-          fi
-
-          if [ -z "$ZIP_FILE" ] || [ ! -f "$ZIP_FILE" ]; then
-            echo "ERRO: nenhum ZIP do J.Pastore Sports AI foi encontrado."
-            echo "Arquivos encontrados na raiz:"
-            find . -maxdepth 1 -type f -printf '%f\n' | sort
+          if [ ! -f "$PROJECT_ZIP" ]; then
+            echo "ERRO: envie/substitua exatamente $PROJECT_ZIP na raiz do repositorio."
             exit 1
           fi
-
-          echo "ZIP selecionado: $ZIP_FILE"
-          echo "ZIP_FILE=$ZIP_FILE" >> "$GITHUB_ENV"
+          echo "ZIP oficial: $PROJECT_ZIP"
+          sha256sum "$PROJECT_ZIP"
 
       - name: Preparar Java 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Instalar Android SDK necessario
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar Android API 35
         shell: bash
         run: |
-          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-
-          if [ ! -x "$SDKMANAGER" ]; then
-            echo "sdkmanager nao encontrado em $SDKMANAGER"
-            find "$ANDROID_HOME" -name sdkmanager -type f -print || true
-            exit 1
-          fi
-
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-
-          "$SDKMANAGER"             "platform-tools"             "platforms;android-35"             "build-tools;35.0.0"
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Preparar Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -89,13 +64,31 @@ jobs:
           set -euo pipefail
           rm -rf build-src output
           mkdir -p build-src output
-          unzip -q "$ZIP_FILE" -d build-src
+          unzip -q "$PROJECT_ZIP" -d build-src
+          test -f build-src/JPASTORE_SPORTS_AI_ANDROID/settings.gradle
 
-          if [ ! -f build-src/JPASTORE_SPORTS_AI_ANDROID/settings.gradle ]; then
-            echo "ERRO: estrutura interna inesperada no ZIP: $ZIP_FILE"
-            find build-src -maxdepth 3 -type f | sort
+      - name: Confirmar versao 5.3 e analise completa
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
+          MARKER="$ROOT/FULL_ANALYSIS_BUILD_5_3.txt"
+          VIEW="$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java"
+          GRADLE="$ROOT/app/build.gradle"
+
+          if [ ! -f "$MARKER" ] || ! grep -Fq "$EXPECTED_BUILD" "$MARKER"; then
+            echo "ERRO: PROJETO ANTIGO DETECTADO. O ZIP nao contem a versao 5.3 de analise completa."
             exit 1
           fi
+          grep -Fq "versionCode 45" "$GRADLE" || { echo "ERRO: versionCode esperado 45 nao encontrado."; exit 1; }
+          grep -Fq "5.3.0-multisport-full-analysis" "$GRADLE" || { echo "ERRO: versionName 5.3 nao encontrado."; exit 1; }
+          grep -Fq "JP-MULTISPORT-FULL-ANALYSIS-5.3.0" "$VIEW" || { echo "ERRO: tela de analise 5.3 ausente."; exit 1; }
+          grep -Fq "openSportEvent(sportEvents.get(ei))" "$VIEW" || { echo "ERRO: clique multiesporte nao aponta para analise completa."; exit 1; }
+          if grep -Fq "TOQUE PARA DETALHES" "$VIEW"; then
+            echo "ERRO: popup antigo ainda existe nesta fonte."
+            exit 1
+          fi
+          echo "OK: J.Pastore Sports AI 5.3 ANALISE COMPLETA confirmado antes da compilacao."
 
       - name: Compilar APK
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -104,16 +97,16 @@ jobs:
       - name: Localizar e validar APK
         shell: bash
         run: |
-          APK="$(find build-src/JPASTORE_SPORTS_AI_ANDROID/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
-
+          set -euo pipefail
+          APK="$(find build-src/JPASTORE_SPORTS_AI_ANDROID/app/build/outputs/apk/debug -type f -name '*.apk' | head -n 1)"
           if [ -z "$APK" ]; then
             echo "ERRO: APK nao encontrado."
             exit 1
           fi
-
           cp "$APK" output/JPASTORE-Sports-AI.apk
           test -s output/JPASTORE-Sports-AI.apk
           ls -lh output/JPASTORE-Sports-AI.apk
+          sha256sum output/JPASTORE-Sports-AI.apk
 
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
