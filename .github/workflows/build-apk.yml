@@ -41,7 +41,7 @@ jobs:
 
             local gradle
             gradle="$(unzip -p "$z" JPASTORE_SPORTS_AI_ANDROID/app/build.gradle 2>/dev/null || true)"
-            [[ "$gradle" == *'applicationId "com.jpastore.sportsai"'* ]] || return 1
+            printf '%s\n' "$gradle" | grep -Eq "applicationId[[:space:]]+['\"]com\.jpastore\.sportsai['\"]" || return 1
 
             return 0
           }
@@ -141,13 +141,13 @@ jobs:
           test -f "$ROOT/app/build.gradle"
           test -f "$ROOT/app/src/main/AndroidManifest.xml"
 
-          grep -Fq 'applicationId "com.jpastore.sportsai"' "$ROOT/app/build.gradle" || {
+          grep -Eq "applicationId[[:space:]]+['\"]com\.jpastore\.sportsai['\"]" "$ROOT/app/build.gradle" || {
             echo "ERRO: applicationId divergente."
             exit 1
           }
 
-          VERSION_CODE="$(grep -E '^[[:space:]]*versionCode[[:space:]]+[0-9]+' "$ROOT/app/build.gradle" | head -n1 | grep -oE '[0-9]+' || true)"
-          VERSION_NAME="$(grep -E '^[[:space:]]*versionName[[:space:]]+"[^"]+"' "$ROOT/app/build.gradle" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/' || true)"
+          VERSION_CODE="$(sed -nE 's/.*versionCode[[:space:]]+([0-9]+).*/\1/p' "$ROOT/app/build.gradle" | head -n1 || true)"
+          VERSION_NAME="$(sed -nE "s/.*versionName[[:space:]]+['\"]([^'\"]+)['\"].*/\1/p" "$ROOT/app/build.gradle" | head -n1 || true)"
 
           echo "J.Pastore Sports AI"
           echo "versionCode: ${VERSION_CODE:-nao identificado}"
