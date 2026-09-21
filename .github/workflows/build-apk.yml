@@ -105,15 +105,45 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Preparar Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Instalar Android API 35
+      - name: Preparar Android SDK e API 35
         shell: bash
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1 || true)"
+
+          if [ -z "$SDKMANAGER" ] || [ ! -x "$SDKMANAGER" ]; then
+            echo "ERRO: sdkmanager pre-instalado nao encontrado no GitHub Runner."
+            find "$ANDROID_HOME" -maxdepth 5 -type f -name sdkmanager -print || true
+            exit 1
+          fi
+
+          echo "Usando sdkmanager existente: $SDKMANAGER"
+          "$SDKMANAGER" --version
+
+          # Aceita as licencas sem depender de android-actions/setup-android.
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
+
+          # Instala somente o que estiver faltando.
+          PACKAGES=()
+          [ -d "$ANDROID_HOME/platform-tools" ] || PACKAGES+=("platform-tools")
+          [ -d "$ANDROID_HOME/platforms/android-35" ] || PACKAGES+=("platforms;android-35")
+          [ -d "$ANDROID_HOME/build-tools/35.0.0" ] || PACKAGES+=("build-tools;35.0.0")
+
+          if [ "${#PACKAGES[@]}" -gt 0 ]; then
+            echo "Instalando pacotes Android ausentes: ${PACKAGES[*]}"
+            "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "${PACKAGES[@]}"
+          else
+            echo "Android API 35 e Build Tools 35.0.0 ja estao disponiveis."
+          fi
+
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Preparar Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
