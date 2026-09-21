@@ -19,7 +19,6 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      EXPECTED_BUILD: JP-MULTISPORT-FULL-ANALYSIS-5.3.0
 
     steps:
       - name: Baixar repositorio
@@ -27,77 +26,68 @@ jobs:
         with:
           fetch-depth: 20
 
-      - name: Localizar e validar ZIP 5.3
+      - name: Localizar projeto J.Pastore Sports AI
         shell: bash
         run: |
           set -euo pipefail
 
-          is_valid_zip() {
+          is_valid_project() {
             local z="$1"
             [ -f "$z" ] || return 1
 
-            local marker=""
-            local gradle=""
-            local view=""
+            unzip -l "$z" JPASTORE_SPORTS_AI_ANDROID/settings.gradle 2>/dev/null | grep -Fq "settings.gradle" || return 1
+            unzip -l "$z" JPASTORE_SPORTS_AI_ANDROID/app/build.gradle 2>/dev/null | grep -Fq "app/build.gradle" || return 1
+            unzip -l "$z" JPASTORE_SPORTS_AI_ANDROID/app/src/main/AndroidManifest.xml 2>/dev/null | grep -Fq "AndroidManifest.xml" || return 1
 
-            marker="$(unzip -p "$z" JPASTORE_SPORTS_AI_ANDROID/FULL_ANALYSIS_BUILD_5_3.txt 2>/dev/null || true)"
+            local gradle
             gradle="$(unzip -p "$z" JPASTORE_SPORTS_AI_ANDROID/app/build.gradle 2>/dev/null || true)"
-            view="$(unzip -p "$z" JPASTORE_SPORTS_AI_ANDROID/app/src/main/java/com/jpastore/sportsai/PremiumView.java 2>/dev/null || true)"
-
-            [[ "$marker" == *"$EXPECTED_BUILD"* ]] || return 1
-            [[ "$gradle" == *"versionCode 45"* ]] || return 1
-            [[ "$gradle" == *"5.3.0-multisport-full-analysis"* ]] || return 1
-            [[ "$view" == *"JP-MULTISPORT-FULL-ANALYSIS-5.3.0"* ]] || return 1
-            [[ "$view" == *"openSportEvent(sportEvents.get(ei))"* ]] || return 1
-            [[ "$view" != *"TOQUE PARA DETALHES"* ]] || return 1
+            [[ "$gradle" == *'applicationId "com.jpastore.sportsai"'* ]] || return 1
 
             return 0
           }
 
-          ZIP_FILE=""
+          PROJECT_ZIP=""
 
-          # 1) Em push, prioriza o ZIP alterado neste commit.
+          # 1) Em push, prioriza um ZIP valido alterado neste commit.
           if [ "${{ github.event_name }}" = "push" ]; then
             while IFS= read -r candidate; do
               [ -n "$candidate" ] || continue
-              if [[ "$candidate" =~ ^JPASTORE_SPORTS_AI_ANDROID_PROJECT.*\.zip$ ]] && is_valid_zip "$candidate"; then
-                ZIP_FILE="$candidate"
+              if [[ "$candidate" =~ ^JPASTORE_SPORTS_AI_ANDROID_PROJECT.*\.zip$ ]] && is_valid_project "$candidate"; then
+                PROJECT_ZIP="$candidate"
               fi
             done < <(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" || true)
           fi
 
-          # 2) Se nao veio do commit, tenta o nome oficial.
-          if [ -z "$ZIP_FILE" ] && is_valid_zip "JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip"; then
-            ZIP_FILE="JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip"
+          # 2) Prefere o nome oficial quando valido.
+          if [ -z "$PROJECT_ZIP" ] && is_valid_project "JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip"; then
+            PROJECT_ZIP="JPASTORE_SPORTS_AI_ANDROID_PROJECT.zip"
           fi
 
-          # 3) Por fim, procura qualquer ZIP valido e escolhe o mais recente no Git.
-          if [ -z "$ZIP_FILE" ]; then
+          # 3) Fallback: escolhe o ZIP valido mais recente no historico do Git.
+          if [ -z "$PROJECT_ZIP" ]; then
             BEST_TS=0
             while IFS= read -r candidate; do
               [ -n "$candidate" ] || continue
-              if is_valid_zip "$candidate"; then
+              if is_valid_project "$candidate"; then
                 TS="$(git log -1 --format=%ct -- "$candidate" 2>/dev/null || echo 0)"
                 TS="${TS:-0}"
                 if [ "$TS" -ge "$BEST_TS" ]; then
                   BEST_TS="$TS"
-                  ZIP_FILE="$candidate"
+                  PROJECT_ZIP="$candidate"
                 fi
               fi
             done < <(find . -maxdepth 1 -type f -name 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip' -printf '%f\n' | sort)
           fi
 
-          if [ -z "$ZIP_FILE" ]; then
-            echo "ERRO: nenhum ZIP valido da versao 5.3 foi encontrado."
-            echo "Envie o ZIP 5.3 para a raiz do repositorio. O nome pode ter sufixo como (1)."
-            echo "ZIPs encontrados:"
-            find . -maxdepth 1 -type f -name 'JPASTORE_SPORTS_AI_ANDROID_PROJECT*.zip' -printf '%f\n' | sort || true
+          if [ -z "$PROJECT_ZIP" ]; then
+            echo "ERRO: nenhum ZIP valido do J.Pastore Sports AI foi encontrado."
+            echo "O ZIP precisa conter JPASTORE_SPORTS_AI_ANDROID/ e applicationId com.jpastore.sportsai."
             exit 1
           fi
 
-          echo "ZIP 5.3 selecionado: $ZIP_FILE"
-          sha256sum "$ZIP_FILE"
-          echo "PROJECT_ZIP=$ZIP_FILE" >> "$GITHUB_ENV"
+          echo "Projeto selecionado: $PROJECT_ZIP"
+          sha256sum "$PROJECT_ZIP"
+          echo "PROJECT_ZIP=$PROJECT_ZIP" >> "$GITHUB_ENV"
 
       - name: Preparar Java 17
         uses: actions/setup-java@v4
@@ -110,40 +100,28 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-
           SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n 1 || true)"
 
           if [ -z "$SDKMANAGER" ] || [ ! -x "$SDKMANAGER" ]; then
-            echo "ERRO: sdkmanager pre-instalado nao encontrado no GitHub Runner."
+            echo "ERRO: sdkmanager nao encontrado no GitHub Runner."
             find "$ANDROID_HOME" -maxdepth 5 -type f -name sdkmanager -print || true
             exit 1
           fi
 
-          echo "Usando sdkmanager existente: $SDKMANAGER"
-          "$SDKMANAGER" --version
-
-          # Aceita as licencas sem depender de android-actions/setup-android.
+          echo "Usando sdkmanager: $SDKMANAGER"
           yes | "$SDKMANAGER" --sdk_root="$ANDROID_HOME" --licenses >/dev/null 2>&1 || true
 
-          # Instala somente o que estiver faltando.
           PACKAGES=()
           [ -d "$ANDROID_HOME/platform-tools" ] || PACKAGES+=("platform-tools")
           [ -d "$ANDROID_HOME/platforms/android-35" ] || PACKAGES+=("platforms;android-35")
           [ -d "$ANDROID_HOME/build-tools/35.0.0" ] || PACKAGES+=("build-tools;35.0.0")
 
           if [ "${#PACKAGES[@]}" -gt 0 ]; then
-            echo "Instalando pacotes Android ausentes: ${PACKAGES[*]}"
             "$SDKMANAGER" --sdk_root="$ANDROID_HOME" "${PACKAGES[@]}"
-          else
-            echo "Android API 35 e Build Tools 35.0.0 ja estao disponiveis."
           fi
 
           test -d "$ANDROID_HOME/platforms/android-35"
           test -d "$ANDROID_HOME/build-tools/35.0.0"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Preparar Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -158,33 +136,24 @@ jobs:
           mkdir -p build-src output
           unzip -q "$PROJECT_ZIP" -d build-src
 
-          if [ ! -f build-src/JPASTORE_SPORTS_AI_ANDROID/settings.gradle ]; then
-            echo "ERRO: estrutura interna inesperada no ZIP selecionado: $PROJECT_ZIP"
-            find build-src -maxdepth 3 -type f | sort
-            exit 1
-          fi
-
-      - name: Confirmar versao 5.3 e analise completa
-        shell: bash
-        run: |
-          set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          MARKER="$ROOT/FULL_ANALYSIS_BUILD_5_3.txt"
-          VIEW="$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java"
-          GRADLE="$ROOT/app/build.gradle"
+          test -f "$ROOT/settings.gradle"
+          test -f "$ROOT/app/build.gradle"
+          test -f "$ROOT/app/src/main/AndroidManifest.xml"
 
-          grep -Fq "$EXPECTED_BUILD" "$MARKER" || { echo "ERRO: marcador 5.3 ausente."; exit 1; }
-          grep -Fq "versionCode 45" "$GRADLE" || { echo "ERRO: versionCode 45 ausente."; exit 1; }
-          grep -Fq "5.3.0-multisport-full-analysis" "$GRADLE" || { echo "ERRO: versionName 5.3 ausente."; exit 1; }
-          grep -Fq "JP-MULTISPORT-FULL-ANALYSIS-5.3.0" "$VIEW" || { echo "ERRO: tela de analise 5.3 ausente."; exit 1; }
-          grep -Fq "openSportEvent(sportEvents.get(ei))" "$VIEW" || { echo "ERRO: clique multiesporte incorreto."; exit 1; }
-
-          if grep -Fq "TOQUE PARA DETALHES" "$VIEW"; then
-            echo "ERRO: popup antigo ainda existe nesta fonte."
+          grep -Fq 'applicationId "com.jpastore.sportsai"' "$ROOT/app/build.gradle" || {
+            echo "ERRO: applicationId divergente."
             exit 1
-          fi
+          }
 
-          echo "OK: J.Pastore Sports AI 5.3 ANALISE COMPLETA confirmado."
+          VERSION_CODE="$(grep -E '^[[:space:]]*versionCode[[:space:]]+[0-9]+' "$ROOT/app/build.gradle" | head -n1 | grep -oE '[0-9]+' || true)"
+          VERSION_NAME="$(grep -E '^[[:space:]]*versionName[[:space:]]+"[^"]+"' "$ROOT/app/build.gradle" | head -n1 | sed -E 's/.*"([^"]+)".*/\1/' || true)"
+
+          echo "J.Pastore Sports AI"
+          echo "versionCode: ${VERSION_CODE:-nao identificado}"
+          echo "versionName: ${VERSION_NAME:-nao identificado}"
+          echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
+          echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
       - name: Compilar APK
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -209,7 +178,7 @@ jobs:
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
         with:
-          name: JPASTORE-Sports-AI-APK-5.3
+          name: JPASTORE-Sports-AI-APK
           path: output/JPASTORE-Sports-AI.apk
           if-no-files-found: error
           retention-days: 30
