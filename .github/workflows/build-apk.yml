@@ -155,27 +155,29 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.1 e motor multifonte
+      - name: Confirmar versão 6.3 e Consensus Intelligence Engine
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "53" || { echo "ERRO: projeto não é versionCode 53 (6.1)."; exit 1; }
-          grep -Fq "6.1.0-multisource-history-fusion" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.1 não encontrado."; exit 1; }
-          grep -Fq "FULL_ANALYSIS_BUILD_6_1" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 6.1 ausente."; exit 1; }
+          test "${APP_VERSION_CODE}" = "55" || { echo "ERRO: projeto não é versionCode 55 (6.3)."; exit 1; }
+          grep -Fq "6.3.0-consensus-intelligence-engine" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.3 não encontrado."; exit 1; }
+          grep -Fq "FULL_ANALYSIS_BUILD_6_3" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 6.3 ausente."; exit 1; }
           WEB="$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java"
-          grep -Fq "mergeSourceRows" "$WEB" || { echo "ERRO: fusão de fontes ausente."; exit 1; }
-          grep -Fq "structuredSources" "$WEB" || { echo "ERRO: rastreamento de fontes ausente."; exit 1; }
-          grep -Fq "sameGame" "$WEB" || { echo "ERRO: deduplicação de jogos ausente."; exit 1; }
-          grep -Fq "sofaFindPairIds" "$WEB" || { echo "ERRO: resolução de IDs pelo calendário SofaScore ausente."; exit 1; }
-          grep -Fq "loadApiHistory" "$WEB" || { echo "ERRO: histórico API-Sports ausente."; exit 1; }
-          grep -Fq "seasonCandidates" "$WEB" || { echo "ERRO: recuperação de temporadas anteriores ausente."; exit 1; }
-          grep -Fq "uiSnippet" "$WEB" || { echo "ERRO: camada PT-BR da web ausente."; exit 1; }
-          grep -Fq "startSportMultiTicket" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: criador multiconfronto ausente."; exit 1; }
-          grep -Fq "BILHETE CRIADO • 0" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: hub de bilhete ausente."; exit 1; }
-          grep -Fq "buildForMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/SportTicketEngine.java" || { echo "ERRO: motor de bilhete múltiplo ausente."; exit 1; }
-          grep -Fq "addSportMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/TicketStore.java" || { echo "ERRO: persistência multiesporte ausente."; exit 1; }
-          echo "Versão 6.1 validada: histórico fundido entre múltiplas fontes antes de decidir se o confronto tem base."
+          CONS="$ROOT/app/src/main/java/com/jpastore/sportsai/SportConsensusEngine.java"
+          TICKET="$ROOT/app/src/main/java/com/jpastore/sportsai/SportTicketEngine.java"
+          UI="$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java"
+          test -f "$CONS" || { echo "ERRO: SportConsensusEngine ausente."; exit 1; }
+          grep -Fq "sourceConflict" "$WEB" || { echo "ERRO: detecção de divergência entre fontes ausente."; exit 1; }
+          grep -Fq "webSourceName" "$WEB" || { echo "ERRO: proveniência web por domínio ausente."; exit 1; }
+          grep -Fq "CONSENSO FORTE" "$CONS" || { echo "ERRO: classificação de consenso ausente."; exit 1; }
+          grep -Fq "totalMedian" "$CONS" || { echo "ERRO: mediana do consenso ausente."; exit 1; }
+          grep -Fq "agreement" "$CONS" || { echo "ERRO: convergência entre fontes ausente."; exit 1; }
+          grep -Fq "EXPLORATÓRIO" "$TICKET" || { echo "ERRO: fallback exploratório do bilhete ausente."; exit 1; }
+          grep -Fq "CONSENSO J.PASTORE IA" "$UI" || { echo "ERRO: painel de consenso da IA ausente."; exit 1; }
+          grep -Fq "JP-MULTISPORT-CONSENSUS-6.3.0" "$UI" || { echo "ERRO: marcador interno 6.3 ausente."; exit 1; }
+          grep -Fq "if(r.commonSample()<3)try{loadApiHistory" "$WEB" || { echo "ERRO: API-Sports deixou de ser último recurso."; exit 1; }
+          echo "Versão 6.3 validada: Internet First + consenso por múltiplas fontes + média ponderada + modo exploratório."
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
