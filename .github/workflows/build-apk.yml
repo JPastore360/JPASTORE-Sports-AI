@@ -155,29 +155,35 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.3 e Consensus Intelligence Engine
+      - name: Confirmar versão 6.4 e Research Engine 2.0
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "55" || { echo "ERRO: projeto não é versionCode 55 (6.3)."; exit 1; }
-          grep -Fq "6.3.0-consensus-intelligence-engine" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.3 não encontrado."; exit 1; }
-          grep -Fq "FULL_ANALYSIS_BUILD_6_3" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 6.3 ausente."; exit 1; }
-          WEB="$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java"
-          CONS="$ROOT/app/src/main/java/com/jpastore/sportsai/SportConsensusEngine.java"
-          TICKET="$ROOT/app/src/main/java/com/jpastore/sportsai/SportTicketEngine.java"
-          UI="$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java"
-          test -f "$CONS" || { echo "ERRO: SportConsensusEngine ausente."; exit 1; }
-          grep -Fq "sourceConflict" "$WEB" || { echo "ERRO: detecção de divergência entre fontes ausente."; exit 1; }
-          grep -Fq "webSourceName" "$WEB" || { echo "ERRO: proveniência web por domínio ausente."; exit 1; }
-          grep -Fq "CONSENSO FORTE" "$CONS" || { echo "ERRO: classificação de consenso ausente."; exit 1; }
-          grep -Fq "totalMedian" "$CONS" || { echo "ERRO: mediana do consenso ausente."; exit 1; }
-          grep -Fq "agreement" "$CONS" || { echo "ERRO: convergência entre fontes ausente."; exit 1; }
-          grep -Fq "EXPLORATÓRIO" "$TICKET" || { echo "ERRO: fallback exploratório do bilhete ausente."; exit 1; }
-          grep -Fq "CONSENSO J.PASTORE IA" "$UI" || { echo "ERRO: painel de consenso da IA ausente."; exit 1; }
-          grep -Fq "JP-MULTISPORT-CONSENSUS-6.3.0" "$UI" || { echo "ERRO: marcador interno 6.3 ausente."; exit 1; }
-          grep -Fq "if(r.commonSample()<3)try{loadApiHistory" "$WEB" || { echo "ERRO: API-Sports deixou de ser último recurso."; exit 1; }
-          echo "Versão 6.3 validada: Internet First + consenso por múltiplas fontes + média ponderada + modo exploratório."
+          test "${APP_VERSION_CODE}" = "56" || { echo "ERRO: projeto não é versionCode 56 (6.4)."; exit 1; }
+          grep -Fq "6.4.0-research-engine-2-loading" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.4 não encontrado."; exit 1; }
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_4" || { echo "ERRO: marcador 6.4 ausente."; exit 1; }
+          SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
+          WEB="$SRC/MultiSportWebClient.java"
+          MULTI="$SRC/MultiSportClient.java"
+          API="$SRC/ApiClient.java"
+          CONS="$SRC/SportConsensusEngine.java"
+          TICKET="$SRC/SportTicketEngine.java"
+          UI="$SRC/PremiumView.java"
+          test -f "$SRC/ResearchProgress.java" || { echo "ERRO: progresso real de pesquisa ausente."; exit 1; }
+          test -f "$SRC/TeamIdentityResolver.java" || { echo "ERRO: resolvedor de aliases ausente."; exit 1; }
+          grep -Fq "loadPublicSchedule" "$MULTI" || { echo "ERRO: agenda pública Internet First ausente."; exit 1; }
+          grep -Fq "researchDeep" "$WEB" || { echo "ERRO: Análise Profunda multiesporte ausente."; exit 1; }
+          grep -Fq "deepWebSweep" "$WEB" || { echo "ERRO: varredura web aprofundada ausente."; exit 1; }
+          grep -Fq "researchPublicOnly" "$WEB" || { echo "ERRO: pesquisa pública unificada ausente."; exit 1; }
+          grep -Fq "deep_v64_unified" "$API" || { echo "ERRO: Research Engine 2.0 do futebol ausente."; exit 1; }
+          grep -Fq "Consensus Intelligence Engine (6.4" "$CONS" || { echo "ERRO: consenso 6.4 ausente."; exit 1; }
+          grep -Fq "boolean exploratory=cc.usable()" "$TICKET" || { echo "ERRO: consenso exploratório adaptativo ausente."; exit 1; }
+          grep -Fq "JP-UNIFIED-RESEARCH-6.4.0" "$UI" || { echo "ERRO: marcador interno 6.4 ausente."; exit 1; }
+          grep -Fq "ANÁLISE PROFUNDA • INTERNET" "$UI" || { echo "ERRO: Análise Profunda do futebol ausente."; exit 1; }
+          grep -Fq "splashProgress" "$UI" || { echo "ERRO: barra de progresso real da abertura ausente."; exit 1; }
+          grep -Fq -- "-angle*1.55f" "$UI" || { echo "ERRO: rotação oposta da bola ausente."; exit 1; }
+          echo "Versão 6.4 validada: Research Engine 2.0 unificado + aliases + consenso + Análise Profunda + progresso real."
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
