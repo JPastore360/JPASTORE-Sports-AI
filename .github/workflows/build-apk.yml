@@ -155,14 +155,14 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.4 e Research Engine 2.0
+      - name: Confirmar versão 6.7 e Calibrated Market Engine
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "56" || { echo "ERRO: projeto não é versionCode 56 (6.4)."; exit 1; }
-          grep -Fq "6.4.0-research-engine-2-loading" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.4 não encontrado."; exit 1; }
-          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_4" || { echo "ERRO: marcador 6.4 ausente."; exit 1; }
+          test "${APP_VERSION_CODE}" = "59" || { echo "ERRO: projeto não é versionCode 59 (6.7)."; exit 1; }
+          grep -Fq "6.7.0-calibrated-market-engine" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.7 não encontrado."; exit 1; }
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_7" || { echo "ERRO: marcador 6.7 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
           MULTI="$SRC/MultiSportClient.java"
@@ -176,15 +176,46 @@ jobs:
           grep -Fq "researchDeep" "$WEB" || { echo "ERRO: Análise Profunda multiesporte ausente."; exit 1; }
           grep -Fq "deepWebSweep" "$WEB" || { echo "ERRO: varredura web aprofundada ausente."; exit 1; }
           grep -Fq "researchPublicOnly" "$WEB" || { echo "ERRO: pesquisa pública unificada ausente."; exit 1; }
-          grep -Fq "deep_v64_unified" "$API" || { echo "ERRO: Research Engine 2.0 do futebol ausente."; exit 1; }
+          grep -Fq "deep_v67_unified" "$API" || { echo "ERRO: cache unificado 6.7 do futebol ausente."; exit 1; }
           grep -Fq "Consensus Intelligence Engine (6.4" "$CONS" || { echo "ERRO: consenso 6.4 ausente."; exit 1; }
-          grep -Fq "boolean exploratory=cc.usable()" "$TICKET" || { echo "ERRO: consenso exploratório adaptativo ausente."; exit 1; }
-          grep -Fq "JP-UNIFIED-RESEARCH-6.4.0" "$UI" || { echo "ERRO: marcador interno 6.4 ausente."; exit 1; }
+          test -f "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: motor central de calibração ausente."; exit 1; }
+          grep -Fq "confidenceScore" "$TICKET" || { echo "ERRO: Confidence Score não integrado ao ticket engine."; exit 1; }
+          grep -Fq "jointProbability" "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta do bilhete ausente."; exit 1; }
+          grep -Fq "JP-CALIBRATED-MARKET-ENGINE-6.7.0" "$UI" || { echo "ERRO: marcador interno 6.7 ausente."; exit 1; }
           grep -Fq "publicFootballGames(String date)" "$API" || { echo "ERRO: helper de agenda pública do futebol ausente."; exit 1; }
           grep -Fq "ANÁLISE PROFUNDA • INTERNET" "$UI" || { echo "ERRO: Análise Profunda do futebol ausente."; exit 1; }
           grep -Fq "splashProgress" "$UI" || { echo "ERRO: barra de progresso real da abertura ausente."; exit 1; }
           grep -Fq -- "-angle*1.55f" "$UI" || { echo "ERRO: rotação oposta da bola ausente."; exit 1; }
-          echo "Versão 6.4 validada: Research Engine 2.0 unificado + aliases + consenso + Análise Profunda + progresso real."
+          grep -Fq "loadEspnSchedule" "$MULTI" || { echo "ERRO: fallback ESPN público ausente."; exit 1; }
+          grep -Fq "loadSportsDbSchedule" "$MULTI" || { echo "ERRO: fallback TheSportsDB ausente."; exit 1; }
+          grep -Fq "loadOpenWebSchedule" "$MULTI" || { echo "ERRO: fallback web aberto ausente."; exit 1; }
+          grep -Fq "apiCircuitOpen" "$MULTI" || { echo "ERRO: circuit breaker de quota ausente."; exit 1; }
+          grep -Fq "readResilientSchedule" "$MULTI" || { echo "ERRO: cache resiliente ausente."; exit 1; }
+          test -f "$SRC/MarketOddsBook.java" || { echo "ERRO: livro de odds sem margem ausente."; exit 1; }
+          test -f "$SRC/MarketOddsClient.java" || { echo "ERRO: cliente opcional de odds ausente."; exit 1; }
+          test -f "$SRC/LiveAnalysisEngine.java" || { echo "ERRO: modelo AO VIVO separado ausente."; exit 1; }
+          grep -Fq "odds/live?fixture=" "$SRC/MarketOddsClient.java" || { echo "ERRO: odds AO VIVO separadas não integradas."; exit 1; }
+          grep -Fq "poissonOutcome" "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: modelo Poisson 1X2 próprio ausente."; exit 1; }
+          grep -Fq "normalHandicapProbability" "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: handicap positivo calibrado ausente."; exit 1; }
+          grep -Fq "loadOptionalOdds" "$WEB" || { echo "ERRO: odds opcionais multiesporte ausentes."; exit 1; }
+          grep -Fq "static String today()" "$API" || { echo "ERRO: helper ApiClient.today ausente."; exit 1; }
+          grep -Fq "static String future(int days)" "$API" || { echo "ERRO: helper ApiClient.future ausente."; exit 1; }
+          grep -Fq "static int pct(String s)" "$API" || { echo "ERRO: helper ApiClient.pct ausente."; exit 1; }
+          grep -Fq "leagueGoalMean" "$SRC/WebDataClient.java" || { echo "ERRO: média histórica da competição não integrada ao motor de gols."; exit 1; }
+          grep -Fq "leagueMean" "$API" || { echo "ERRO: média da competição não persistida na projeção de gols."; exit 1; }
+          echo "Versão 6.7 validada: API-independent + Calibrated Market Engine + odds sem margem + Poisson próprio + live separado."
+
+      - name: Rodar 20 testes do motor estatístico
+        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/jp-ai-tests && mkdir -p /tmp/jp-ai-tests
+          javac -encoding UTF-8 -d /tmp/jp-ai-tests \
+            app/src/main/java/com/jpastore/sportsai/StatisticalCalibrationEngine.java \
+            app/src/main/java/com/jpastore/sportsai/MarketOddsBook.java \
+            tools/StatisticalCalibrationEngineSelfTest.java
+          java -cp /tmp/jp-ai-tests com.jpastore.sportsai.StatisticalCalibrationEngineSelfTest
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -252,4 +283,3 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
-          
