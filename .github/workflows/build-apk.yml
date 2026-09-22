@@ -155,27 +155,27 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.0 e recuperação histórica do Bilhete IA
+      - name: Confirmar versão 6.1 e motor multifonte
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "52" || { echo "ERRO: projeto não é versionCode 52 (6.0)."; exit 1; }
-          grep -Fq "6.0.0-multiticket-history-recovery" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.0 não encontrado."; exit 1; }
-          grep -Fq "loadApiHistory" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: fallback histórico não encontrado."; exit 1; }
-          grep -Fq "uiSnippet" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: camada PT-BR da web não encontrada."; exit 1; }
-          grep -Fq "FULL_ANALYSIS_BUILD_6_0" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 6.0 ausente."; exit 1; }
-          grep -Fq "startSportMultiTicket" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: criador de bilhete multiconfronto ausente."; exit 1; }
-          grep -Fq "addSportMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/TicketStore.java" || { echo "ERRO: persistência multiconfronto corrigida ausente."; exit 1; }
-          grep -Fq "buildForMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/SportTicketEngine.java" || { echo "ERRO: fallback adaptativo do Bilhete IA ausente."; exit 1; }
-          grep -Fq "Bilhete não foi criado" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: proteção contra bilhete vazio ausente."; exit 1; }
-          grep -Fq "GERAR BILHETE •" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: geração multiconfronto ausente."; exit 1; }
-          grep -Fq "drawSportActiveTicketBar" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: barra de bilhete ativo ausente."; exit 1; }
-          grep -Fq "BILHETE CRIADO • 0" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: botão permanente BILHETE CRIADO ausente."; exit 1; }
-          grep -Fq "loadSofaHistory" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: fallback público estruturado ausente."; exit 1; }
-          grep -Fq "seasonCandidates" "$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java" || { echo "ERRO: recuperação de temporadas anteriores ausente."; exit 1; }
-          grep -Fq "Montando Bilhete IA" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: progresso resiliente do bilhete ausente."; exit 1; }
-          echo "Versão 6.0 validada: bilhete multiconfronto continua após falhas e recupera histórico de temporadas anteriores."
+          test "${APP_VERSION_CODE}" = "53" || { echo "ERRO: projeto não é versionCode 53 (6.1)."; exit 1; }
+          grep -Fq "6.1.0-multisource-history-fusion" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.1 não encontrado."; exit 1; }
+          grep -Fq "FULL_ANALYSIS_BUILD_6_1" <(find "$ROOT" -maxdepth 1 -type f -printf '%f\n') || { echo "ERRO: marcador 6.1 ausente."; exit 1; }
+          WEB="$ROOT/app/src/main/java/com/jpastore/sportsai/MultiSportWebClient.java"
+          grep -Fq "mergeSourceRows" "$WEB" || { echo "ERRO: fusão de fontes ausente."; exit 1; }
+          grep -Fq "structuredSources" "$WEB" || { echo "ERRO: rastreamento de fontes ausente."; exit 1; }
+          grep -Fq "sameGame" "$WEB" || { echo "ERRO: deduplicação de jogos ausente."; exit 1; }
+          grep -Fq "sofaFindPairIds" "$WEB" || { echo "ERRO: resolução de IDs pelo calendário SofaScore ausente."; exit 1; }
+          grep -Fq "loadApiHistory" "$WEB" || { echo "ERRO: histórico API-Sports ausente."; exit 1; }
+          grep -Fq "seasonCandidates" "$WEB" || { echo "ERRO: recuperação de temporadas anteriores ausente."; exit 1; }
+          grep -Fq "uiSnippet" "$WEB" || { echo "ERRO: camada PT-BR da web ausente."; exit 1; }
+          grep -Fq "startSportMultiTicket" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: criador multiconfronto ausente."; exit 1; }
+          grep -Fq "BILHETE CRIADO • 0" "$ROOT/app/src/main/java/com/jpastore/sportsai/PremiumView.java" || { echo "ERRO: hub de bilhete ausente."; exit 1; }
+          grep -Fq "buildForMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/SportTicketEngine.java" || { echo "ERRO: motor de bilhete múltiplo ausente."; exit 1; }
+          grep -Fq "addSportMulti" "$ROOT/app/src/main/java/com/jpastore/sportsai/TicketStore.java" || { echo "ERRO: persistência multiesporte ausente."; exit 1; }
+          echo "Versão 6.1 validada: histórico fundido entre múltiplas fontes antes de decidir se o confronto tem base."
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
