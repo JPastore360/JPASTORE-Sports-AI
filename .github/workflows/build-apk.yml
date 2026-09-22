@@ -180,6 +180,7 @@ jobs:
           grep -Fq "Consensus Intelligence Engine (6.4" "$CONS" || { echo "ERRO: consenso 6.4 ausente."; exit 1; }
           grep -Fq "boolean exploratory=cc.usable()" "$TICKET" || { echo "ERRO: consenso exploratório adaptativo ausente."; exit 1; }
           grep -Fq "JP-UNIFIED-RESEARCH-6.4.0" "$UI" || { echo "ERRO: marcador interno 6.4 ausente."; exit 1; }
+          grep -Fq "publicFootballGames(String date)" "$API" || { echo "ERRO: helper de agenda pública do futebol ausente."; exit 1; }
           grep -Fq "ANÁLISE PROFUNDA • INTERNET" "$UI" || { echo "ERRO: Análise Profunda do futebol ausente."; exit 1; }
           grep -Fq "splashProgress" "$UI" || { echo "ERRO: barra de progresso real da abertura ausente."; exit 1; }
           grep -Fq -- "-angle*1.55f" "$UI" || { echo "ERRO: rotação oposta da bola ausente."; exit 1; }
@@ -197,20 +198,34 @@ jobs:
           MAX_ATTEMPTS=4
           for ATTEMPT in $(seq 1 $MAX_ATTEMPTS); do
             echo "Tentativa $ATTEMPT de $MAX_ATTEMPTS para compilar o APK..."
+            LOG="/tmp/jpastore-gradle-${ATTEMPT}.log"
 
-            if gradle --no-daemon --max-workers=2 :app:assembleDebug; then
+            set +e
+            gradle --no-daemon --max-workers=2 :app:assembleDebug 2>&1 | tee "$LOG"
+            CODE=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$CODE" -eq 0 ]; then
               echo "Compilacao concluida com sucesso."
               exit 0
             fi
 
-            if [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; then
-              WAIT=$((ATTEMPT * 45))
-              echo "Falha temporaria ao baixar dependencias. Aguardando ${WAIT}s antes de tentar novamente..."
-              sleep "$WAIT"
+            # Retry somente para falhas transitórias de rede/repositório.
+            if grep -Eqi '429|Too Many Requests|Could not GET|Could not resolve|Read timed out|Connection reset|Temporary failure|503 Service Unavailable' "$LOG"; then
+              if [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; then
+                WAIT=$((ATTEMPT * 45))
+                echo "Falha temporaria de rede/dependencias. Aguardando ${WAIT}s antes de tentar novamente..."
+                sleep "$WAIT"
+                continue
+              fi
+            else
+              echo "ERRO de codigo/compilacao detectado. Nao sera repetido 4 vezes."
+              grep -nE 'error:|cannot find symbol|incompatible types|not a statement|illegal start|unclosed' "$LOG" | tail -n 40 || true
+              exit "$CODE"
             fi
           done
 
-          echo "ERRO: a compilacao falhou apos $MAX_ATTEMPTS tentativas."
+          echo "ERRO: a compilacao falhou apos $MAX_ATTEMPTS tentativas de rede."
           exit 1
 
       - name: Localizar e validar APK
@@ -237,3 +252,4 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
+          
