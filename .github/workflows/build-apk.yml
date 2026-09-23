@@ -155,14 +155,14 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.8, Fast Research e 5DollarFootballAPI
+      - name: Confirmar versão 6.9 Turbo Multi-API
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "60" || { echo "ERRO: projeto não é versionCode 60 (6.8)."; exit 1; }
-          grep -Fq "6.8.0-fast-research-5dollar" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.8 não encontrado."; exit 1; }
-          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_8" || { echo "ERRO: marcador 6.8 ausente."; exit 1; }
+          test "${APP_VERSION_CODE}" = "61" || { echo "ERRO: projeto não é versionCode 61 (6.9)."; exit 1; }
+          grep -Fq "6.9.0-turbo-multi-api" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.9 não encontrado."; exit 1; }
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_9" || { echo "ERRO: marcador 6.9 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
           MULTI="$SRC/MultiSportClient.java"
@@ -176,12 +176,12 @@ jobs:
           grep -Fq "researchDeep" "$WEB" || { echo "ERRO: Análise Profunda multiesporte ausente."; exit 1; }
           grep -Fq "deepWebSweep" "$WEB" || { echo "ERRO: varredura web aprofundada ausente."; exit 1; }
           grep -Fq "researchPublicOnly" "$WEB" || { echo "ERRO: pesquisa pública unificada ausente."; exit 1; }
-          grep -Fq "deep_v68_fast_" "$API" || { echo "ERRO: cache Fast Research 6.8 do futebol ausente."; exit 1; }
+          grep -Fq "deep_v69_turbo_" "$API" || { echo "ERRO: cache Turbo Research 6.9 do futebol ausente."; exit 1; }
           grep -Fq "Consensus Intelligence Engine (6.4" "$CONS" || { echo "ERRO: consenso 6.4 ausente."; exit 1; }
           test -f "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: motor central de calibração ausente."; exit 1; }
           grep -Fq "confidenceScore" "$TICKET" || { echo "ERRO: Confidence Score não integrado ao ticket engine."; exit 1; }
           grep -Fq "jointProbability" "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta do bilhete ausente."; exit 1; }
-          grep -Fq "JP-FAST-CALIBRATED-ENGINE-6.8.0" "$UI" || { echo "ERRO: marcador interno 6.8 ausente."; exit 1; }
+          grep -Fq "JP-TURBO-MULTI-API-ENGINE-6.9.0" "$UI" || { echo "ERRO: marcador interno 6.9 ausente."; exit 1; }
           grep -Fq "publicFootballGames(String date)" "$API" || { echo "ERRO: helper de agenda pública do futebol ausente."; exit 1; }
           grep -Fq "ANÁLISE PROFUNDA • INTERNET" "$UI" || { echo "ERRO: Análise Profunda do futebol ausente."; exit 1; }
           grep -Fq "splashProgress" "$UI" || { echo "ERRO: barra de progresso real da abertura ausente."; exit 1; }
@@ -209,9 +209,17 @@ jobs:
           grep -Fq 'FiveDollarFootballClient.key(c)' "$API" || { echo "ERRO: rota FAST 5Dollar não integrada ao ApiClient."; exit 1; }
           grep -Fq '5DollarFootballAPI • FAST' "$UI" || { echo "ERRO: configuração 5Dollar não exposta na interface."; exit 1; }
           grep -Fq 'CONFIGURAR / COLAR CHAVE' "$UI" || { echo "ERRO: campo de colar chave 5Dollar ausente."; exit 1; }
-          echo "Versão 6.8 validada: API-independent + Fast Research + 5DollarFootballAPI + Calibrated Market Engine."
+          test -f "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: cliente Highlightly Basketball ausente."; exit 1; }
+          grep -Fq 'api_highlightly_basketball' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: armazenamento persistente da chave Highlightly ausente."; exit 1; }
+          grep -Fq 'https://basketball.highlightly.net/' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: endpoint oficial Highlightly Basketball ausente."; exit 1; }
+          grep -Fq 'last-five-games?teamId=' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: forma recente Highlightly ausente."; exit 1; }
+          grep -Fq 'head-2-head?teamIdOne=' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: H2H Highlightly ausente."; exit 1; }
+          grep -Fq 'Highlightly Basketball • BASQUETE FAST' "$UI" || { echo "ERRO: aba Highlightly não exposta na interface."; exit 1; }
+          grep -Fq 'timedOpenWebHistory' "$WEB" || { echo "ERRO: orçamento de tempo da web aberta ausente."; exit 1; }
+          grep -Fq 'homeDisplayGames' "$UI" || { echo "ERRO: correção da tela inicial do futebol ausente."; exit 1; }
+          echo "Versão 6.9 validada: Turbo Multi-API + Highlightly Basketball + 5Dollar + Calibrated Market Engine."
 
-      - name: Rodar 20 testes do motor estatístico
+      - name: Rodar 20 testes do motor estatístico calibrado
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
