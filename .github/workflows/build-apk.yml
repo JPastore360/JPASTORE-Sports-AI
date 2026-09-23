@@ -155,14 +155,14 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.9.1 Logo Optimizer
+      - name: Confirmar versão 6.10 Production Tuning
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "62" || { echo "ERRO: projeto não é versionCode 62 (6.9.1)."; exit 1; }
-          grep -Fq "6.9.1-turbo-logo-optimizer" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.9.1 não encontrado."; exit 1; }
-          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_9_1" || { echo "ERRO: marcador 6.9.1 ausente."; exit 1; }
+          test "${APP_VERSION_CODE}" = "63" || { echo "ERRO: projeto não é versionCode 63 (6.10)."; exit 1; }
+          grep -Fq "6.10.0-production-tuning" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10 não encontrado."; exit 1; }
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10" || { echo "ERRO: marcador 6.10 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
           MULTI="$SRC/MultiSportClient.java"
@@ -181,7 +181,7 @@ jobs:
           test -f "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: motor central de calibração ausente."; exit 1; }
           grep -Fq "confidenceScore" "$TICKET" || { echo "ERRO: Confidence Score não integrado ao ticket engine."; exit 1; }
           grep -Fq "jointProbability" "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta do bilhete ausente."; exit 1; }
-          grep -Fq "JP-TURBO-MULTI-API-ENGINE-6.9.1-LOGO" "$UI" || { echo "ERRO: marcador interno 6.9.1 ausente."; exit 1; }
+          grep -Fq "V6.10 • PRODUCTION TUNING" "$UI" || { echo "ERRO: marcador visual 6.10 ausente."; exit 1; }
           grep -Fq "publicFootballGames(String date)" "$API" || { echo "ERRO: helper de agenda pública do futebol ausente."; exit 1; }
           grep -Fq "ANÁLISE PROFUNDA • INTERNET" "$UI" || { echo "ERRO: Análise Profunda do futebol ausente."; exit 1; }
           grep -Fq "splashProgress" "$UI" || { echo "ERRO: barra de progresso real da abertura ausente."; exit 1; }
@@ -226,7 +226,35 @@ jobs:
           grep -Fq 'resolveTeamBadgeSmart' "$UI" || { echo "ERRO: fallback inteligente de escudos ausente."; exit 1; }
           grep -Fq 'teamInitials' "$UI" || { echo "ERRO: fallback visual por iniciais ausente."; exit 1; }
           if grep -Fq 'center(c,"FC"' "$UI"; then echo "ERRO: fallback genérico FC ainda presente."; exit 1; fi
-          echo "Versão 6.9.1 validada: Turbo Multi-API + Logo Optimizer + cache assíncrono de escudos."
+          test -f "$SRC/RecentFormEngine.java" || { echo "ERRO: Recent Form 2.0 ausente."; exit 1; }
+          test -f "$SRC/EventTimeNormalizer.java" || { echo "ERRO: normalizador central de horário/status ausente."; exit 1; }
+          test -f "$SRC/ProductionRules.java" || { echo "ERRO: regras de produção ausentes."; exit 1; }
+          test -f "$SRC/AnalysisAuditLogger.java" || { echo "ERRO: log de auditoria 6.10 ausente."; exit 1; }
+          grep -Fq 'gameWeight' "$SRC/RecentFormEngine.java" || { echo "ERRO: recência ponderada ausente."; exit 1; }
+          grep -Fq 'weightedFor' "$SRC/RecentFormEngine.java" || { echo "ERRO: métricas ponderadas ausentes."; exit 1; }
+          grep -Fq 'backToBack' "$CONS" || { echo "ERRO: back-to-back não integrado."; exit 1; }
+          grep -Fq 'sourceConvergence' "$CONS" || { echo "ERRO: convergência de fontes ausente."; exit 1; }
+          grep -Fq 'projectedTotal' "$CONS" || { echo "ERRO: total projetado do basquete ausente."; exit 1; }
+          grep -Fq 'TimePicker exactPicker' "$ROOT/app/src/main/java/com/jpastore/sportsai/MainActivity.java" || { echo "ERRO: relógio configurável por minuto ausente."; exit 1; }
+          grep -Fq 'TODOS OS CONFRONTOS CARREGADOS' "$UI" || { echo "ERRO: agenda ampla não exposta na tela inicial."; exit 1; }
+          if grep -Fq 'center(c,"FC"' "$UI"; then echo "ERRO: fallback FC reapareceu."; exit 1; fi
+          echo "Versão 6.10 validada: Production Tuning + Multi-API + Logo Optimizer."
+
+
+      - name: Rodar 12 testes Production Tuning
+        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/jp-ai-prod && mkdir -p /tmp/jp-ai-prod
+          javac -encoding UTF-8 -d /tmp/jp-ai-prod \
+            app/src/main/java/com/jpastore/sportsai/RecentFormEngine.java \
+            app/src/main/java/com/jpastore/sportsai/EventTimeNormalizer.java \
+            app/src/main/java/com/jpastore/sportsai/ProductionRules.java \
+            app/src/main/java/com/jpastore/sportsai/MarketOddsBook.java \
+            app/src/main/java/com/jpastore/sportsai/StatisticalCalibrationEngine.java \
+            tools/ProductionTuningSelfTest.java
+          java -cp /tmp/jp-ai-prod com.jpastore.sportsai.ProductionTuningSelfTest
 
       - name: Rodar testes do Logo Optimizer
         shell: bash
