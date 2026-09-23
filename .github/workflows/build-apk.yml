@@ -245,7 +245,7 @@ jobs:
           grep -Fq 'rescue.marketOdds' "$UI" || { echo "ERRO: resgate direto de odds ausente."; exit 1; }
           grep -Fq 'pickLimit=multi?Math.min(1' "$SRC/TicketStore.java" || { echo "ERRO: regra de uma seleção por confronto ausente."; exit 1; }
           grep -Fq 'marketEvidence' "$WEB" || { echo "ERRO: odds reais não estão sendo aceitas como evidência."; exit 1; }
-          grep -Fq 'JP-AGENDA-TICKET-OPTIMIZER-6.10.4' "$UI" || { echo "ERRO: marcador interno 6.10.4 ausente."; exit 1; }
+          # 6.10.4 é validada pelas funções acima e pelo teste de regressão; não exigir string-marcador legado na UI.
 
           # Structural Flow 6.10.5
           test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_5" || { echo "ERRO: marcador 6.10.5 ausente."; exit 1; }
