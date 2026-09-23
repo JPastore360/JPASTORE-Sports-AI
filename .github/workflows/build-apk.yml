@@ -155,14 +155,14 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.9 Turbo Multi-API
+      - name: Confirmar versão 6.9.1 Logo Optimizer
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "61" || { echo "ERRO: projeto não é versionCode 61 (6.9)."; exit 1; }
-          grep -Fq "6.9.0-turbo-multi-api" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.9 não encontrado."; exit 1; }
-          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_9" || { echo "ERRO: marcador 6.9 ausente."; exit 1; }
+          test "${APP_VERSION_CODE}" = "62" || { echo "ERRO: projeto não é versionCode 62 (6.9.1)."; exit 1; }
+          grep -Fq "6.9.1-turbo-logo-optimizer" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.9.1 não encontrado."; exit 1; }
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_9_1" || { echo "ERRO: marcador 6.9.1 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
           MULTI="$SRC/MultiSportClient.java"
@@ -181,7 +181,7 @@ jobs:
           test -f "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: motor central de calibração ausente."; exit 1; }
           grep -Fq "confidenceScore" "$TICKET" || { echo "ERRO: Confidence Score não integrado ao ticket engine."; exit 1; }
           grep -Fq "jointProbability" "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta do bilhete ausente."; exit 1; }
-          grep -Fq "JP-TURBO-MULTI-API-ENGINE-6.9.0" "$UI" || { echo "ERRO: marcador interno 6.9 ausente."; exit 1; }
+          grep -Fq "JP-TURBO-MULTI-API-ENGINE-6.9.1-LOGO" "$UI" || { echo "ERRO: marcador interno 6.9.1 ausente."; exit 1; }
           grep -Fq "publicFootballGames(String date)" "$API" || { echo "ERRO: helper de agenda pública do futebol ausente."; exit 1; }
           grep -Fq "ANÁLISE PROFUNDA • INTERNET" "$UI" || { echo "ERRO: Análise Profunda do futebol ausente."; exit 1; }
           grep -Fq "splashProgress" "$UI" || { echo "ERRO: barra de progresso real da abertura ausente."; exit 1; }
@@ -221,7 +221,18 @@ jobs:
           grep -Fq 'highlightlyBasketballApiDialog()' "$UI" || { echo "ERRO: diálogo para colar/alterar a chave Highlightly ausente."; exit 1; }
           grep -Fq 'timedOpenWebHistory' "$WEB" || { echo "ERRO: orçamento de tempo da web aberta ausente."; exit 1; }
           grep -Fq 'homeDisplayGames' "$UI" || { echo "ERRO: correção da tela inicial do futebol ausente."; exit 1; }
-          echo "Versão 6.9 validada: Turbo Multi-API + Highlightly Basketball + 5Dollar + Calibrated Market Engine."
+          grep -Fq 'sofaTeamImage' "$MULTI" || { echo "ERRO: URLs diretas de escudos SofaScore ausentes."; exit 1; }
+          grep -Fq 'e.homeId=h.optLong("id",0)' "$MULTI" || { echo "ERRO: ID do mandante SofaScore não preservado."; exit 1; }
+          grep -Fq 'resolveTeamBadgeSmart' "$UI" || { echo "ERRO: fallback inteligente de escudos ausente."; exit 1; }
+          grep -Fq 'teamInitials' "$UI" || { echo "ERRO: fallback visual por iniciais ausente."; exit 1; }
+          if grep -Fq 'center(c,"FC"' "$UI"; then echo "ERRO: fallback genérico FC ainda presente."; exit 1; fi
+          echo "Versão 6.9.1 validada: Turbo Multi-API + Logo Optimizer + cache assíncrono de escudos."
+
+      - name: Rodar testes do Logo Optimizer
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build-src/JPASTORE_SPORTS_AI_ANDROID/tools/logo-optimizer-selftest.sh build-src/JPASTORE_SPORTS_AI_ANDROID
 
       - name: Rodar 20 testes do motor estatístico calibrado
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
