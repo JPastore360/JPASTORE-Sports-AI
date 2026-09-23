@@ -1,4 +1,4 @@
-name: Gerar APK J.Pastore Sports AI
+ name: Gerar APK J.Pastore Sports AI
 
 on:
   workflow_dispatch:
@@ -177,7 +177,8 @@ jobs:
           grep -Fq "deepWebSweep" "$WEB" || { echo "ERRO: varredura web aprofundada ausente."; exit 1; }
           grep -Fq "researchPublicOnly" "$WEB" || { echo "ERRO: pesquisa pública unificada ausente."; exit 1; }
           grep -Fq "deep_v69_turbo_" "$API" || { echo "ERRO: cache Turbo Research 6.9 do futebol ausente."; exit 1; }
-          grep -Fq "Consensus Intelligence Engine (6.4" "$CONS" || { echo "ERRO: consenso 6.4 ausente."; exit 1; }
+          grep -Fq "sourceConvergence" "$CONS" || { echo "ERRO: convergência funcional de fontes ausente."; exit 1; }
+          grep -Fq "buildNote" "$CONS" || { echo "ERRO: classificação funcional do consenso ausente."; exit 1; }
           test -f "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: motor central de calibração ausente."; exit 1; }
           grep -Fq "confidenceScore" "$TICKET" || { echo "ERRO: Confidence Score não integrado ao ticket engine."; exit 1; }
           grep -Fq "jointProbability" "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta do bilhete ausente."; exit 1; }
