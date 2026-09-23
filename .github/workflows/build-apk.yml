@@ -207,14 +207,18 @@ jobs:
           grep -Fq 'api_5dollar' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: armazenamento da chave 5Dollar ausente."; exit 1; }
           grep -Fq 'Authorization","Bearer ' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: autenticação Bearer 5Dollar ausente."; exit 1; }
           grep -Fq 'FiveDollarFootballClient.key(c)' "$API" || { echo "ERRO: rota FAST 5Dollar não integrada ao ApiClient."; exit 1; }
-          grep -Fq '5DollarFootballAPI • FAST' "$UI" || { echo "ERRO: configuração 5Dollar não exposta na interface."; exit 1; }
-          grep -Fq 'CONFIGURAR / COLAR CHAVE' "$UI" || { echo "ERRO: campo de colar chave 5Dollar ausente."; exit 1; }
+          # Valida a integração pela lógica da tela, não por um rótulo visual exato.
+          # Isso evita falso negativo quando o texto exibido muda (ex.: "FUTEBOL FAST").
+          grep -Fq 'FiveDollarFootballClient.SOURCE.equals(selectedApiSource)' "$UI" || { echo "ERRO: fonte 5Dollar não ligada à tela de APIs."; exit 1; }
+          grep -Fq 'fiveDollarApiDialog()' "$UI" || { echo "ERRO: diálogo para colar/alterar a chave 5Dollar ausente."; exit 1; }
+          grep -Fq 'CONFIGURAR / COLAR CHAVE' "$UI" || { echo "ERRO: campo de colar chave ausente na interface."; exit 1; }
           test -f "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: cliente Highlightly Basketball ausente."; exit 1; }
           grep -Fq 'api_highlightly_basketball' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: armazenamento persistente da chave Highlightly ausente."; exit 1; }
           grep -Fq 'https://basketball.highlightly.net/' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: endpoint oficial Highlightly Basketball ausente."; exit 1; }
           grep -Fq 'last-five-games?teamId=' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: forma recente Highlightly ausente."; exit 1; }
           grep -Fq 'head-2-head?teamIdOne=' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: H2H Highlightly ausente."; exit 1; }
-          grep -Fq 'Highlightly Basketball • BASQUETE FAST' "$UI" || { echo "ERRO: aba Highlightly não exposta na interface."; exit 1; }
+          grep -Fq 'HighlightlyBasketballClient.SOURCE.equals(selectedApiSource)' "$UI" || { echo "ERRO: fonte Highlightly não ligada à tela de APIs."; exit 1; }
+          grep -Fq 'highlightlyBasketballApiDialog()' "$UI" || { echo "ERRO: diálogo para colar/alterar a chave Highlightly ausente."; exit 1; }
           grep -Fq 'timedOpenWebHistory' "$WEB" || { echo "ERRO: orçamento de tempo da web aberta ausente."; exit 1; }
           grep -Fq 'homeDisplayGames' "$UI" || { echo "ERRO: correção da tela inicial do futebol ausente."; exit 1; }
           echo "Versão 6.9 validada: Turbo Multi-API + Highlightly Basketball + 5Dollar + Calibrated Market Engine."
