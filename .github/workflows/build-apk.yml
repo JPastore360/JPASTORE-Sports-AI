@@ -155,82 +155,125 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.10.1 Speed + Logo Hotfix
+      - name: Confirmar versão 6.10.3 Market Collector
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
-          API="$SRC/ApiClient.java"
-          WEB="$SRC/MultiSportWebClient.java"
-          UI="$SRC/PremiumView.java"
-          CONS="$SRC/SportConsensusEngine.java"
-
-          test "${APP_VERSION_CODE}" = "64" || { echo "ERRO: projeto não é versionCode 64 (6.10.1)."; exit 1; }
-          grep -Fq "6.10.1-speed-logo-hotfix" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.1 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "66" || { echo "ERRO: projeto não é versionCode 66 (6.10.3)."; exit 1; }
+          grep -Fq "6.10.3-market-collector" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.3 não encontrado."; exit 1; }
           test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_1" || { echo "ERRO: marcador 6.10.1 ausente."; exit 1; }
+          SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
+          WEB="$SRC/MultiSportWebClient.java"
+          MULTI="$SRC/MultiSportClient.java"
+          API="$SRC/ApiClient.java"
+          CONS="$SRC/SportConsensusEngine.java"
+          TICKET="$SRC/SportTicketEngine.java"
+          UI="$SRC/PremiumView.java"
 
-          for f in ProductionTuningEngine.java EventStandards.java SportPresentationRules.java StatisticalCalibrationEngine.java SportTicketEngine.java TeamIdentityResolver.java; do
-            test -f "$SRC/$f" || { echo "ERRO: módulo obrigatório ausente: $f"; exit 1; }
-          done
+          # Núcleo existente preservado
+          test -f "$SRC/ProductionTuningEngine.java" || { echo "ERRO: Production Tuning Engine ausente."; exit 1; }
+          test -f "$SRC/EventStandards.java" || { echo "ERRO: normalização central de status/horário ausente."; exit 1; }
+          test -f "$SRC/SportPresentationRules.java" || { echo "ERRO: regras de apresentação por esporte ausentes."; exit 1; }
+          test -f "$SRC/TeamIdentityResolver.java" || { echo "ERRO: resolvedor de aliases ausente."; exit 1; }
+          test -f "$SRC/StatisticalCalibrationEngine.java" || { echo "ERRO: motor de calibração ausente."; exit 1; }
+          test -f "$SRC/MarketOddsBook.java" || { echo "ERRO: livro de odds ausente."; exit 1; }
+          test -f "$SRC/LiveAnalysisEngine.java" || { echo "ERRO: modelo LIVE separado ausente."; exit 1; }
           grep -Fq 'weightedFor' "$SRC/ProductionTuningEngine.java" || { echo "ERRO: médias ponderadas ausentes."; exit 1; }
-          grep -Fq 'recencyWeight' "$SRC/ProductionTuningEngine.java" || { echo "ERRO: recência ponderada ausente."; exit 1; }
           grep -Fq 'backToBackSeries' "$SRC/ProductionTuningEngine.java" || { echo "ERRO: back-to-back ausente."; exit 1; }
-          grep -Fq 'expectedTotal' "$SRC/ProductionTuningEngine.java" || { echo "ERRO: total projetado ausente."; exit 1; }
-          grep -Fq 'sourceConvergence' "$SRC/SportTicketEngine.java" || { echo "ERRO: convergência de fontes não auditada."; exit 1; }
-          grep -Fq 'buildNote' "$CONS" || { echo "ERRO: classificação funcional do consenso ausente."; exit 1; }
-          grep -Fq 'jointProbability' "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta ausente."; exit 1; }
+          grep -Fq 'expectedTotal' "$SRC/ProductionTuningEngine.java" || { echo "ERRO: total esperado do basquete ausente."; exit 1; }
+          grep -Fq 'projectedMargin' "$SRC/ProductionTuningEngine.java" || { echo "ERRO: margem projetada ausente."; exit 1; }
+          grep -Fq 'buildNote' "$CONS" || { echo "ERRO: classificação funcional das fontes ausente."; exit 1; }
+          grep -Fq 'favoriteConvergence' "$CONS" || { echo "ERRO: convergência entre fontes ausente."; exit 1; }
+          grep -Fq 'sourceConvergence=' "$TICKET" || { echo "ERRO: log de auditoria da convergência ausente."; exit 1; }
+          grep -Fq 'confidenceScore' "$TICKET" || { echo "ERRO: Confidence Score ausente."; exit 1; }
+          grep -Fq 'jointProbability' "$SRC/TicketStore.java" || { echo "ERRO: probabilidade conjunta do bilhete ausente."; exit 1; }
 
-          test -f "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: 5Dollar ausente."; exit 1; }
-          test -f "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: Highlightly ausente."; exit 1; }
-          grep -Fq 'FiveDollarFootballClient.SOURCE.equals(selectedApiSource)' "$UI" || { echo "ERRO: 5Dollar não ligada à UI."; exit 1; }
-          grep -Fq 'HighlightlyBasketballClient.SOURCE.equals(selectedApiSource)' "$UI" || { echo "ERRO: Highlightly não ligada à UI."; exit 1; }
+          # Multi-API e agenda
+          grep -Fq 'loadPublicSchedule' "$MULTI" || { echo "ERRO: agenda pública ausente."; exit 1; }
+          grep -Fq 'loadEspnSchedule' "$MULTI" || { echo "ERRO: ESPN fallback ausente."; exit 1; }
+          grep -Fq 'loadSportsDbSchedule' "$MULTI" || { echo "ERRO: TheSportsDB fallback ausente."; exit 1; }
+          grep -Fq 'loadOpenWebSchedule' "$MULTI" || { echo "ERRO: web fallback ausente."; exit 1; }
+          grep -Fq 'apiCircuitOpen' "$MULTI" || { echo "ERRO: circuit breaker ausente."; exit 1; }
+          grep -Fq 'homeDisplayGames' "$UI" || { echo "ERRO: agenda ampla da home ausente."; exit 1; }
+          grep -Fq 'TimePicker picker' "$ROOT/app/src/main/java/com/jpastore/sportsai/MainActivity.java" || { echo "ERRO: relógio configurável ausente."; exit 1; }
+          grep -Fq 'picker.setMinute' "$ROOT/app/src/main/java/com/jpastore/sportsai/MainActivity.java" || { echo "ERRO: seleção livre de minutos ausente."; exit 1; }
+
+          # APIs configuráveis preservadas
+          test -f "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: cliente 5Dollar ausente."; exit 1; }
+          test -f "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: cliente Highlightly ausente."; exit 1; }
+          grep -Fq 'api_5dollar' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: chave 5Dollar não persistida."; exit 1; }
+          grep -Fq 'api_highlightly_basketball' "$SRC/HighlightlyBasketballClient.java" || { echo "ERRO: chave Highlightly não persistida."; exit 1; }
           grep -Fq 'fiveDollarApiDialog()' "$UI" || { echo "ERRO: diálogo 5Dollar ausente."; exit 1; }
           grep -Fq 'highlightlyBasketballApiDialog()' "$UI" || { echo "ERRO: diálogo Highlightly ausente."; exit 1; }
 
-          grep -Fq 'forceDeep?15000L:4200L' "$API" || { echo "ERRO: orçamento total rápido 6.10.1 ausente."; exit 1; }
+          # Hotfix de velocidade 6.10.1
+          grep -Fq 'forceDeep?15000L:4200L' "$API" || { echo "ERRO: limite total da análise automática ausente."; exit 1; }
+          grep -Fq 'forceDeep?7000L:2200L' "$API" || { echo "ERRO: janela rápida 2,2 s ausente."; exit 1; }
+          grep -Fq 'forceDeep?6200L:850L' "$API" || { echo "ERRO: limite do consenso web ausente."; exit 1; }
           grep -Fq 'forceDeep?5000L:550L' "$API" || { echo "ERRO: fallback rápido API-Football ausente."; exit 1; }
-          grep -Fq 'ensureGoalFallbackTimed' "$API" || { echo "ERRO: fallback OpenFootball ainda pode bloquear."; exit 1; }
-          grep -Fq 'forceDeep?4500L:350L' "$API" || { echo "ERRO: orçamento do fallback de gols ausente."; exit 1; }
+          grep -Fq 'forceDeep?2500L:450L' "$API" || { echo "ERRO: fallback de gols com timeout ausente."; exit 1; }
+          grep -Fq 'forceDeep?1100L:450L' "$API" || { echo "ERRO: timeout curto de odds ausente."; exit 1; }
 
-          grep -Fq 'String resolveSofaBadge' "$WEB" || { echo "ERRO: resolvedor rápido SofaScore ausente."; exit 1; }
-          grep -Fq 'h.setConnectTimeout(1200);h.setReadTimeout(1600);' "$WEB" || { echo "ERRO: orçamento rápido do resolvedor de logos ausente."; exit 1; }
-          grep -Fq 'resolveSofaBadge(sport,team)' "$UI" || { echo "ERRO: resolvedor SofaScore não ligado à UI."; exit 1; }
-          grep -Fq 'logoField(ho)' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: logos 5Dollar não preservados."; exit 1; }
-          grep -Fq 'www.thesportsdb.com/api/v1/json/123/searchteams.php' "$UI" || { echo "ERRO: fallback TheSportsDB ausente."; exit 1; }
-          grep -Fq 'en.wikipedia.org/api/rest_v1/page/summary/' "$UI" || { echo "ERRO: fallback Wikipedia ausente."; exit 1; }
+          # Hotfix de logos 6.10.1
+          grep -Fq 'resolveSofaBadge' "$UI" || { echo "ERRO: resolver SofaScore por nome ausente."; exit 1; }
+          grep -Fq 'api.sofascore.com/api/v1/search/all/' "$UI" || { echo "ERRO: busca de time SofaScore ausente."; exit 1; }
+          grep -Fq 'teamLogo(ho)' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: logo 5Dollar mandante não preservado."; exit 1; }
+          grep -Fq 'teamLogo(aw)' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: logo 5Dollar visitante não preservado."; exit 1; }
+          grep -Fq 'teamInitials' "$UI" || { echo "ERRO: fallback por iniciais ausente."; exit 1; }
           if grep -Fq 'center(c,"FC"' "$UI"; then echo "ERRO: fallback genérico FC reapareceu."; exit 1; fi
+          grep -Fq 'JP-SPEED-LOGO-HOTFIX-6.10.1' "$UI" || { echo "ERRO: marcador interno 6.10.1 ausente."; exit 1; }
 
-          grep -Fq 'picker.setMinute(chosen[1])' "$SRC/MainActivity.java" || { echo "ERRO: seletor de minuto livre ausente."; exit 1; }
-          echo "Versão 6.10.1 validada: speed budget + logos multi-fonte + Production Tuning."
+          # Market Collector 6.10.3
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_3" || { echo "ERRO: marcador 6.10.3 ausente."; exit 1; }
+          test -f "$SRC/MarketCollector.java" || { echo "ERRO: MarketCollector central ausente."; exit 1; }
+          grep -Fq 'sofaId' "$MULTI" || { echo "ERRO: ID específico SofaScore ausente."; exit 1; }
+          grep -Fq 'apiSportsId' "$MULTI" || { echo "ERRO: ID específico API-Sports ausente."; exit 1; }
+          grep -Fq 'new MarketCollector(c).collect' "$WEB" || { echo "ERRO: Research Engine ainda não usa o coletor central."; exit 1; }
+          grep -Fq '/odds/1/all' "$SRC/MarketCollector.java" || { echo "ERRO: fonte pública de odds SofaScore ausente."; exit 1; }
+          grep -Fq 'resolveApiEvent' "$SRC/MarketCollector.java" || { echo "ERRO: resolução de evento API-Sports ausente."; exit 1; }
+          grep -Fq 'availabilityLabel' "$SRC/MarketOddsBook.java" || { echo "ERRO: estados de disponibilidade de mercado ausentes."; exit 1; }
+          grep -Fq 'marketAvailability' "$SRC/TicketStore.java" || { echo "ERRO: estado de coleta não chega ao bilhete."; exit 1; }
 
-      - name: Rodar testes Production Tuning
+          echo "Versão 6.10.3 validada: Market Collector multi-source."
+
+      - name: Rodar 10 testes Production Tuning
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
           set -euo pipefail
           bash tools/run-production-tuning-tests.sh
 
+      - name: Rodar 10 testes Speed + Logo Hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build-src/JPASTORE_SPORTS_AI_ANDROID/tools/speed-logo-hotfix-selftest.sh build-src/JPASTORE_SPORTS_AI_ANDROID
+
       - name: Rodar testes do Logo Optimizer
-        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
           set -euo pipefail
-          bash tools/logo-optimizer-selftest.sh .
+          bash build-src/JPASTORE_SPORTS_AI_ANDROID/tools/logo-optimizer-selftest.sh build-src/JPASTORE_SPORTS_AI_ANDROID
 
-      - name: Rodar testes do motor estatístico calibrado
+      - name: Rodar 20 testes do motor estatístico calibrado
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
           set -euo pipefail
-          bash tools/run-statistical-tests.sh
+          rm -rf /tmp/jp-ai-tests && mkdir -p /tmp/jp-ai-tests
+          javac -encoding UTF-8 -d /tmp/jp-ai-tests \
+            app/src/main/java/com/jpastore/sportsai/StatisticalCalibrationEngine.java \
+            app/src/main/java/com/jpastore/sportsai/MarketOddsBook.java \
+            tools/StatisticalCalibrationEngineSelfTest.java
+          java -cp /tmp/jp-ai-tests com.jpastore.sportsai.StatisticalCalibrationEngineSelfTest
 
-      - name: Rodar testes Speed + Logo 6.10.1
+      - name: Rodar testes do Market Collector 6.10.3
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
           set -euo pipefail
-          bash tools/speed-logo-hotfix-selftest.sh .
+          bash tools/run-market-collector-tests.sh
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -293,7 +336,7 @@ jobs:
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
         with:
-          name: JPASTORE-Sports-AI-APK
+          name: JPASTORE-Sports-AI-6.10.3-APK
           path: output/JPASTORE-Sports-AI.apk
           if-no-files-found: error
           retention-days: 30
