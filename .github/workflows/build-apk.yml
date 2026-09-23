@@ -155,13 +155,13 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.10.3 Market Collector
+      - name: Confirmar versão 6.10.4 Agenda + Ticket Optimizer
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "66" || { echo "ERRO: projeto não é versionCode 66 (6.10.3)."; exit 1; }
-          grep -Fq "6.10.3-market-collector" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.3 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "67" || { echo "ERRO: projeto não é versionCode 67 (6.10.4)."; exit 1; }
+          grep -Fq "6.10.4-agenda-ticket-optimizer" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.4 não encontrado."; exit 1; }
           test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_1" || { echo "ERRO: marcador 6.10.1 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
@@ -235,9 +235,21 @@ jobs:
           grep -Fq 'availabilityLabel' "$SRC/MarketOddsBook.java" || { echo "ERRO: estados de disponibilidade de mercado ausentes."; exit 1; }
           grep -Fq 'marketAvailability' "$SRC/TicketStore.java" || { echo "ERRO: estado de coleta não chega ao bilhete."; exit 1; }
 
-          echo "Versão 6.10.3 validada: Market Collector multi-source."
+          # Agenda + Ticket Optimizer 6.10.4
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_4" || { echo "ERRO: marcador 6.10.4 ausente."; exit 1; }
+          grep -Fq 'expandFixtures' "$API" || { echo "ERRO: segunda passagem da agenda ausente."; exit 1; }
+          grep -Fq 'soccer/bra.1' "$MULTI" || { echo "ERRO: cobertura ESPN de futebol ampliada ausente."; exit 1; }
+          grep -Fq 'buildSportMultiTicketBatch' "$UI" || { echo "ERRO: gerador paralelo de múltiplos ausente."; exit 1; }
+          grep -Fq 'Math.min(4,queue.size())' "$UI" || { echo "ERRO: limite de concorrência do bilhete ausente."; exit 1; }
+          grep -Fq 'marketOnlyFallback' "$TICKET" || { echo "ERRO: fallback de mercado real ausente."; exit 1; }
+          grep -Fq 'rescue.marketOdds' "$UI" || { echo "ERRO: resgate direto de odds ausente."; exit 1; }
+          grep -Fq 'pickLimit=multi?Math.min(1' "$SRC/TicketStore.java" || { echo "ERRO: regra de uma seleção por confronto ausente."; exit 1; }
+          grep -Fq 'marketEvidence' "$WEB" || { echo "ERRO: odds reais não estão sendo aceitas como evidência."; exit 1; }
+          grep -Fq 'JP-AGENDA-TICKET-OPTIMIZER-6.10.4' "$UI" || { echo "ERRO: marcador interno 6.10.4 ausente."; exit 1; }
 
-      - name: Rodar 10 testes Production Tuning
+          echo "Versão 6.10.4 validada: agenda expandida + bilhete múltiplo otimizado."
+
+      - name: Rodar 12 testes Production Tuning
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
@@ -275,6 +287,13 @@ jobs:
         run: |
           set -euo pipefail
           bash tools/run-market-collector-tests.sh
+
+      - name: Rodar testes Agenda + Bilhete 6.10.4
+        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/agenda-ticket-optimizer-selftest.sh .
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -337,7 +356,7 @@ jobs:
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
         with:
-          name: JPASTORE-Sports-AI-6.10.3-APK
+          name: JPASTORE-Sports-AI-6.10.4-APK
           path: output/JPASTORE-Sports-AI.apk
           if-no-files-found: error
           retention-days: 30
