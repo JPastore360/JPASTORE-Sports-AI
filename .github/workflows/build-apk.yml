@@ -263,6 +263,7 @@ jobs:
           set -euo pipefail
           rm -rf /tmp/jp-ai-tests && mkdir -p /tmp/jp-ai-tests
           javac -encoding UTF-8 -d /tmp/jp-ai-tests \
+            app/src/main/java/com/jpastore/sportsai/EventStandards.java \
             app/src/main/java/com/jpastore/sportsai/StatisticalCalibrationEngine.java \
             app/src/main/java/com/jpastore/sportsai/MarketOddsBook.java \
             tools/StatisticalCalibrationEngineSelfTest.java
