@@ -155,13 +155,13 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.10.4 Agenda + Ticket Optimizer
+      - name: Confirmar versão 6.10.5 Structural Flow
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "67" || { echo "ERRO: projeto não é versionCode 67 (6.10.4)."; exit 1; }
-          grep -Fq "6.10.4-agenda-ticket-optimizer" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.4 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "68" || { echo "ERRO: projeto não é versionCode 68 (6.10.5)."; exit 1; }
+          grep -Fq "6.10.5-structural-flow" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.5 não encontrado."; exit 1; }
           test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_1" || { echo "ERRO: marcador 6.10.1 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
@@ -247,7 +247,20 @@ jobs:
           grep -Fq 'marketEvidence' "$WEB" || { echo "ERRO: odds reais não estão sendo aceitas como evidência."; exit 1; }
           grep -Fq 'JP-AGENDA-TICKET-OPTIMIZER-6.10.4' "$UI" || { echo "ERRO: marcador interno 6.10.4 ausente."; exit 1; }
 
-          echo "Versão 6.10.4 validada: agenda expandida + bilhete múltiplo otimizado."
+          # Structural Flow 6.10.5
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_5" || { echo "ERRO: marcador 6.10.5 ausente."; exit 1; }
+          test -f "$SRC/HomeFlowCore.java" || { echo "ERRO: pipeline puro da home ausente."; exit 1; }
+          test -f "$SRC/TicketBatchGenerator.java" || { echo "ERRO: gerador de lote de bilhetes ausente."; exit 1; }
+          test -f "$SRC/GeneratedTicketStore.java" || { echo "ERRO: persistência de bilhetes gerados ausente."; exit 1; }
+          grep -Fq '[JP_HOME]' "$UI" || { echo "ERRO: logs JP_HOME ausentes."; exit 1; }
+          grep -Fq '[JP_TICKETS]' "$UI" || { echo "ERRO: logs JP_TICKETS ausentes."; exit 1; }
+          grep -Fq 'paging.optInt("total"' "$MULTI" || { echo "ERRO: paginação da API multiesporte ausente."; exit 1; }
+          grep -Fq 'fetchApiFootballFixtures' "$API" || { echo "ERRO: paginação API-Football ausente."; exit 1; }
+          grep -Fq 'GeneratedTicketStore' "$UI" || { echo "ERRO: armazenamento de bilhetes individuais não integrado."; exit 1; }
+          grep -Fq 'SEM SELEÇÃO CONSERVADORA' "$TICKET" || { echo "ERRO: bloqueio conservador ausente."; exit 1; }
+          grep -Fq 'JP-STRUCTURAL-FLOW-6.10.5' "$UI" || { echo "ERRO: marcador interno 6.10.5 ausente."; exit 1; }
+
+          echo "Versão 6.10.5 validada: home desacoplada de odds + lote persistente de bilhetes + conservador estrito."
 
       - name: Rodar 12 testes Production Tuning
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -288,12 +301,19 @@ jobs:
           set -euo pipefail
           bash tools/run-market-collector-tests.sh
 
-      - name: Rodar testes Agenda + Bilhete 6.10.4
+      - name: Rodar regressão Agenda + Bilhete 6.10.4
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
         run: |
           set -euo pipefail
           bash tools/agenda-ticket-optimizer-selftest.sh .
+
+      - name: Rodar testes estruturais Home + Bilhetes 6.10.5
+        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/structural-flow-selftest.sh
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -356,7 +376,7 @@ jobs:
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
         with:
-          name: JPASTORE-Sports-AI-6.10.4-APK
+          name: JPASTORE-Sports-AI-6.10.5-APK
           path: output/JPASTORE-Sports-AI.apk
           if-no-files-found: error
           retention-days: 30
