@@ -9,7 +9,7 @@ on:
       - '.github/workflows/build-apk.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -388,7 +388,7 @@ jobs:
           ls -lh output/JPASTORE-Sports-AI.apk
           sha256sum output/JPASTORE-Sports-AI.apk
 
-      - name: Publicar APK para download
+      - name: Publicar APK temporário em Actions
         uses: actions/upload-artifact@v4
         with:
           name: JPASTORE-Sports-AI-6.10.6-APK
@@ -396,3 +396,28 @@ jobs:
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
+
+      - name: Publicar APK permanente no GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          APK="output/JPASTORE-Sports-AI.apk"
+          test -s "$APK"
+
+          TAG="v${APP_VERSION_NAME}"
+          TITLE="J.PASTORE Sports AI ${APP_VERSION_NAME}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG já existe. Atualizando APK..."
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            echo "Criando release permanente $TAG..."
+            gh release create "$TAG" "$APK" \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --notes "APK gerado automaticamente pelo GitHub Actions. Versão: ${APP_VERSION_NAME} (code ${APP_VERSION_CODE}). Este arquivo permanece disponível em Releases, independentemente da retenção dos Artifacts do Actions."
+          fi
+
+          echo "APK permanente publicado em Releases: $TAG"
