@@ -155,13 +155,13 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.10.5 Structural Flow
+      - name: Confirmar versão 6.10.6 Ticket Fallback
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "68" || { echo "ERRO: projeto não é versionCode 68 (6.10.5)."; exit 1; }
-          grep -Fq "6.10.5-structural-flow" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.5 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "69" || { echo "ERRO: projeto não é versionCode 69 (6.10.6)."; exit 1; }
+          grep -Fq "6.10.6-ticket-fallback" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.6 não encontrado."; exit 1; }
           test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_1" || { echo "ERRO: marcador 6.10.1 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
@@ -260,7 +260,14 @@ jobs:
           grep -Fq 'SEM SELEÇÃO CONSERVADORA' "$TICKET" || { echo "ERRO: bloqueio conservador ausente."; exit 1; }
           grep -Fq 'JP-STRUCTURAL-FLOW-6.10.5' "$UI" || { echo "ERRO: marcador interno 6.10.5 ausente."; exit 1; }
 
-          echo "Versão 6.10.5 validada: home desacoplada de odds + lote persistente de bilhetes + conservador estrito."
+
+          # Ticket Fallback 6.10.6
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_6" || { echo "ERRO: marcador 6.10.6 ausente."; exit 1; }
+          test -f "$SRC/InitialPredictionTicketFactory.java" || { echo "ERRO: factory de fallback da predição inicial ausente."; exit 1; }
+          grep -Fq 'JP-BASIC-TICKET-FALLBACK-6.10.6' "$SRC/TicketStore.java" || { echo "ERRO: fallback manual 6.10.6 ausente."; exit 1; }
+          grep -Fq 'sportMultiMode=SportTicketEngine.EQUILIBRADO' "$UI" || { echo "ERRO: modo inicial do lote não está EQUILIBRADO."; exit 1; }
+          grep -Fq 'InitialPredictionTicketFactory.football' "$UI" || { echo "ERRO: fallback da predição inicial não integrado ao lote."; exit 1; }
+          echo "Versão 6.10.6 validada: bilhete sem bloqueio da análise profunda + lote com fallback inicial."
 
       - name: Rodar 12 testes Production Tuning
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -314,6 +321,14 @@ jobs:
         run: |
           set -euo pipefail
           bash tools/structural-flow-selftest.sh
+
+
+      - name: Rodar testes Ticket Fallback 6.10.6
+        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/initial-ticket-fallback-selftest.sh
 
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -376,7 +391,7 @@ jobs:
       - name: Publicar APK para download
         uses: actions/upload-artifact@v4
         with:
-          name: JPASTORE-Sports-AI-6.10.5-APK
+          name: JPASTORE-Sports-AI-6.10.6-APK
           path: output/JPASTORE-Sports-AI.apk
           if-no-files-found: error
           retention-days: 30
