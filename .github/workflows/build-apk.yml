@@ -155,13 +155,13 @@ jobs:
           echo "APP_VERSION_CODE=${VERSION_CODE:-unknown}" >> "$GITHUB_ENV"
           echo "APP_VERSION_NAME=${VERSION_NAME:-unknown}" >> "$GITHUB_ENV"
 
-      - name: Confirmar versão 6.10.6 Ticket Fallback
+      - name: Confirmar versão 6.10.7 API Priority + Ticket
         shell: bash
         run: |
           set -euo pipefail
           ROOT=build-src/JPASTORE_SPORTS_AI_ANDROID
-          test "${APP_VERSION_CODE}" = "69" || { echo "ERRO: projeto não é versionCode 69 (6.10.6)."; exit 1; }
-          grep -Fq "6.10.6-ticket-fallback" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.6 não encontrado."; exit 1; }
+          test "${APP_VERSION_CODE}" = "70" || { echo "ERRO: projeto não é versionCode 70 (6.10.7)."; exit 1; }
+          grep -Fq "6.10.7-api-priority-ticket" "$ROOT/app/build.gradle" || { echo "ERRO: versionName 6.10.7 não encontrado."; exit 1; }
           test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_1" || { echo "ERRO: marcador 6.10.1 ausente."; exit 1; }
           SRC="$ROOT/app/src/main/java/com/jpastore/sportsai"
           WEB="$SRC/MultiSportWebClient.java"
@@ -207,13 +207,17 @@ jobs:
           grep -Fq 'fiveDollarApiDialog()' "$UI" || { echo "ERRO: diálogo 5Dollar ausente."; exit 1; }
           grep -Fq 'highlightlyBasketballApiDialog()' "$UI" || { echo "ERRO: diálogo Highlightly ausente."; exit 1; }
 
-          # Hotfix de velocidade 6.10.1
-          grep -Fq 'forceDeep?15000L:4200L' "$API" || { echo "ERRO: limite total da análise automática ausente."; exit 1; }
-          grep -Fq 'forceDeep?7000L:2200L' "$API" || { echo "ERRO: janela rápida 2,2 s ausente."; exit 1; }
-          grep -Fq 'forceDeep?6200L:850L' "$API" || { echo "ERRO: limite do consenso web ausente."; exit 1; }
-          grep -Fq 'forceDeep?5000L:550L' "$API" || { echo "ERRO: fallback rápido API-Football ausente."; exit 1; }
-          grep -Fq 'forceDeep?2500L:450L' "$API" || { echo "ERRO: fallback de gols com timeout ausente."; exit 1; }
-          grep -Fq 'forceDeep?1100L:450L' "$API" || { echo "ERRO: timeout curto de odds ausente."; exit 1; }
+          # Rota de análise 6.10.7 — 5Dollar primária, API-Football complementar, internet confirmação
+          test -f "$SRC/ResearchRoutePolicy.java" || { echo "ERRO: política de roteamento 6.10.7 ausente."; exit 1; }
+          grep -Fq 'fiveDollarBudget(boolean deep)' "$SRC/ResearchRoutePolicy.java" || { echo "ERRO: orçamento dedicado da 5Dollar ausente."; exit 1; }
+          grep -Fq 'apiFootballBudget(boolean deep)' "$SRC/ResearchRoutePolicy.java" || { echo "ERRO: orçamento da API-Football ausente."; exit 1; }
+          grep -Fq 'internetBudget(boolean deep)' "$SRC/ResearchRoutePolicy.java" || { echo "ERRO: orçamento da internet ausente."; exit 1; }
+          grep -Fq 'source=5Dollar' "$API" || { echo "ERRO: 5Dollar não está na rota prioritária."; exit 1; }
+          grep -Fq 'source=API-Football' "$API" || { echo "ERRO: API-Football não está na segunda camada."; exit 1; }
+          grep -Fq 'source=Internet' "$API" || { echo "ERRO: internet não está na terceira camada."; exit 1; }
+          grep -Fq 'safeHourlyLimit' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: proteção da cota 5Dollar ausente."; exit 1; }
+          grep -Fq 'reserveRequestSlot' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: contador local da cota 5Dollar ausente."; exit 1; }
+          grep -Fq 'budgetAvailable' "$SRC/FiveDollarFootballClient.java" || { echo "ERRO: reserva de requisições 5Dollar ausente."; exit 1; }
 
           # Hotfix de logos 6.10.1
           grep -Fq 'resolveSofaBadge' "$UI" || { echo "ERRO: resolver SofaScore por nome ausente."; exit 1; }
@@ -240,7 +244,7 @@ jobs:
           grep -Fq 'expandFixtures' "$API" || { echo "ERRO: segunda passagem da agenda ausente."; exit 1; }
           grep -Fq 'soccer/bra.1' "$MULTI" || { echo "ERRO: cobertura ESPN de futebol ampliada ausente."; exit 1; }
           grep -Fq 'buildSportMultiTicketBatch' "$UI" || { echo "ERRO: gerador paralelo de múltiplos ausente."; exit 1; }
-          grep -Fq 'Math.min(4,queue.size())' "$UI" || { echo "ERRO: limite de concorrência do bilhete ausente."; exit 1; }
+          grep -Fq 'MultiSportClient.FOOTBALL.equals(sportMultiBuildSport)?2:4' "$UI" || { echo "ERRO: concorrência adaptativa do bilhete ausente."; exit 1; }
           grep -Fq 'marketOnlyFallback' "$TICKET" || { echo "ERRO: fallback de mercado real ausente."; exit 1; }
           grep -Fq 'rescue.marketOdds' "$UI" || { echo "ERRO: resgate direto de odds ausente."; exit 1; }
           grep -Fq 'pickLimit=multi?Math.min(1' "$SRC/TicketStore.java" || { echo "ERRO: regra de uma seleção por confronto ausente."; exit 1; }
@@ -267,7 +271,16 @@ jobs:
           grep -Fq 'JP-BASIC-TICKET-FALLBACK-6.10.6' "$SRC/TicketStore.java" || { echo "ERRO: fallback manual 6.10.6 ausente."; exit 1; }
           grep -Fq 'sportMultiMode=SportTicketEngine.EQUILIBRADO' "$UI" || { echo "ERRO: modo inicial do lote não está EQUILIBRADO."; exit 1; }
           grep -Fq 'InitialPredictionTicketFactory.football' "$UI" || { echo "ERRO: fallback da predição inicial não integrado ao lote."; exit 1; }
-          echo "Versão 6.10.6 validada: bilhete sem bloqueio da análise profunda + lote com fallback inicial."
+
+          # API Priority + Ticket 6.10.7
+          test -f "$ROOT/FULL_ANALYSIS_BUILD_6_10_7" || { echo "ERRO: marcador 6.10.7 ausente."; exit 1; }
+          test -f "$SRC/ResearchRoutePolicy.java" || { echo "ERRO: ResearchRoutePolicy ausente."; exit 1; }
+          grep -Fq 'researchFootballPriority' "$WEB" || { echo "ERRO: rota 5Dollar → API-Football → internet não integrada ao Research Engine."; exit 1; }
+          grep -Fq 'batchInitialPrediction' "$UI" || { echo "ERRO: fallback estruturado da predição no lote ausente."; exit 1; }
+          grep -Fq 'JP-API-PRIORITY-TICKET-6.10.7' "$UI" || { echo "ERRO: marcador interno 6.10.7 ausente."; exit 1; }
+          grep -Fq 'Dupla chance' "$SRC/InitialPredictionTicketFactory.java" || { echo "ERRO: alternativas derivadas da predição inicial ausentes."; exit 1; }
+          grep -Fq 'Empate anula' "$SRC/InitialPredictionTicketFactory.java" || { echo "ERRO: alternativas DNB do fallback ausentes."; exit 1; }
+          echo "Versão 6.10.7 validada: 5Dollar primária + API-Football complementar + internet de confirmação + lote ampliado."
 
       - name: Rodar 12 testes Production Tuning
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
@@ -330,6 +343,13 @@ jobs:
           set -euo pipefail
           bash tools/initial-ticket-fallback-selftest.sh
 
+      - name: Rodar testes API Priority + Tickets 6.10.7
+        working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/api-priority-ticket-selftest.sh
+
       - name: Compilar APK com retry anti-429
         working-directory: build-src/JPASTORE_SPORTS_AI_ANDROID
         shell: bash
@@ -391,7 +411,7 @@ jobs:
       - name: Publicar APK temporário em Actions
         uses: actions/upload-artifact@v4
         with:
-          name: JPASTORE-Sports-AI-6.10.6-APK
+          name: JPASTORE-Sports-AI-6.10.7-APK
           path: output/JPASTORE-Sports-AI.apk
           if-no-files-found: error
           retention-days: 30
